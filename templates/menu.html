@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minimal Shop</title>
+  <script src="https://telegram.org/js/telegram-web-app.js?59"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1" type="module"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#1e40af',
+              light: '#3b82f6',
+              dark: '#1e3a8a',
+            },
+            accent: {
+              DEFAULT: '#0f172a',
+              light: '#334155',
+              dark: '#0c1425',
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+            'slide-up': 'slideUp 0.3s ease-out',
+            'bounce-soft': 'bounceSoft 0.6s ease-in-out',
+            'pulse-soft': 'pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            /* START: Added Alert Animations */
+            'slide-down-fade-in': 'slideDownFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+            'fade-out-up': 'fadeOutUp 0.5s ease-out forwards',
+            /* END: Added Alert Animations */
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            bounceSoft: {
+              '0%, 100%': { transform: 'scale(1)' },
+              '50%': { transform: 'scale(1.05)' }
+            },
+            pulseSoft: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.8' }
+            },
+            /* START: Added Alert Keyframes */
+            slideDownFadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(-20px) scale(0.95)' },
+              '100%': { opacity: '1', transform: 'translateY(0) scale(1)' }
+            },
+            fadeOutUp: {
+              '0%': { opacity: '1', transform: 'translateY(0)' },
+              '100%': { opacity: '0', transform: 'translateY(-20px)' }
+            }
+            /* END: Added Alert Keyframes */
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-effect {
+      backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .product-card {
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .product-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+    .cart-badge {
+      animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    }
+    .loader {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 4px solid #f3f4f6;
+      border-radius: 50%;
+      border-top-color: #1e40af;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-primary {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(30, 64, 175, 0.3);
+    }
+    .btn-primary:disabled {
+      background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+      cursor: not-allowed;
+      transform: none; box-shadow: none;
+    }
+    #imagePreviewModal {
+        backdrop-filter: blur(12px);
+        transition: opacity 0.3s ease-in-out;
+    }
+    #imagePreviewModal .preview-content {
+      transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    }
+    #imagePreviewModal:not(.visible) .preview-content {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    .counter-btn {
+      transition: all 0.2s ease;
+    }
+    .counter-btn:hover {
+      transform: scale(1.1);
+      background-color: #e5e7eb;
+    }
+    .counter-btn:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 text-gray-900 font-sans min-h-screen">
+  
+  <div id="alert-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-[101] w-full max-w-sm sm:max-w-md px-4 space-y-3">
+  </div>
+  <nav class="fixed top-0 left-0 w-full glass-effect shadow-lg flex justify-between items-center px-6 sm:px-8 py-4 z-20 animate-fade-in">
+    <div class="flex-1"></div>
+    <div class="flex-1 flex justify-center">
+        <img src="{{ logo }}" alt="Shop Logo" id="shop-logo" style="display: none; height: 3.5rem;" />
+    </div>
+    <div class="flex-1 flex justify-end relative">
+      <button id="cartBtn" class="relative hover:scale-110 transition-transform duration-200 p-2 rounded-full hover:bg-white/20">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-7 h-7 text-brand">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.293 2.293a1 1 0 00.707 1.707H19m-12 0a1 1 0 100 2 1 1 0 000-2zm12 0a1 1 0 100 2 1 1 0 000-2z" />
+        </svg>
+        <span id="cartCount" class="absolute -top-1 -right-1 cart-badge text-white text-xs rounded-full w-6 h-6 flex items-center justify-center shadow-lg font-bold">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <main id="container" class="pt-28 pb-10 px-6 grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 max-w-7xl mx-auto hidden animate-fade-in">
+  </main>
+
+  <div id="loader" class="fixed inset-0 glass-effect flex items-center justify-center z-50">
+    <div class="text-center">
+      <div class="loader mb-4"></div>
+      <p class="text-brand font-semibold text-lg">Yuklanmoqda...</p>
+    </div>
+  </div>
+
+  <div id="cartBackdrop" class="fixed inset-0 bg-black bg-opacity-60 hidden z-20 backdrop-blur-sm"></div>
+
+  <div id="cartDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-30 flex flex-col">
+    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-brand/5 to-accent/5">
+      <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <svg class="w-6 h-6 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.293 2.293a1 1 0 00.707 1.707H19m-12 0a1 1 0 100 2 1 1 0 000-2zm12 0a1 1 0 100 2 1 1 0 000-2z"></path></svg>
+        Sizning savatingiz
+      </h2>
+      <button onclick="toggleCart()" class="text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-2 rounded-full transition-all duration-200">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div id="cartItems" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50"></div>
+    <div class="p-6 border-t bg-white">
+      <div class="flex justify-between items-center mb-6 p-4 bg-gradient-to-r from-brand/10 to-accent/10 rounded-xl">
+        <span class="font-bold text-xl text-gray-800">Jami:</span>
+        <span id="cartTotal" class="font-black text-2xl text-brand">0 UZS</span>
+      </div>
+      <button onclick="placeOrder()" id="orderBtn" class="w-full btn-primary text-white py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300">
+        Buyurtma berish
+      </button>
+    </div>
+  </div>
+
+  <div id="imagePreviewModal" data-current-item-id="" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4 hidden" onclick="closeImagePreview()">
+    <div class="preview-content bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="w-full md:w-1/2 bg-gray-100 flex items-center justify-center p-4 flex-shrink-0">
+        <img id="previewImage" src="" alt="Product Preview" class="w-full h-80 md:h-full object-contain rounded-lg">
+      </div>
+      <div class="w-full md:w-1/2 p-6 flex flex-col">
+        <div class="flex justify-between items-start mb-2">
+          <h3 id="previewTitle" class="text-2xl font-bold text-gray-800"></h3>
+          <button class="text-gray-400 hover:text-gray-600" onclick="closeImagePreview()">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <p id="previewPrice" class="text-2xl font-extrabold text-brand mb-4"></p>
+        <p id="previewDescription" class="text-gray-600 mb-6 text-sm"></p>
+        <div id="previewControls" class="mt-auto space-y-4">
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+    // --- START: Added Alert Functionality ---
+    function showAlert(message, type = 'success') {
+        const alertContainer = document.getElementById('alert-container');
+        if (!alertContainer) return;
+
+        const alertId = `alert-${Date.now()}`;
+        const alertEl = document.createElement('div');
+
+        const icons = {
+            success: `<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" /></svg>`,
+            info: `<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" /></svg>`
+        };
+        
+        const colors = {
+            success: { base: 'bg-green-100 text-green-800', hover: 'hover:bg-green-200', ring: 'focus:ring-offset-green-100 focus:ring-green-600' },
+            info: { base: 'bg-blue-100 text-blue-800', hover: 'hover:bg-blue-200', ring: 'focus:ring-offset-blue-100 focus:ring-blue-600' }
+        };
+        
+        const theme = colors[type] || colors.success;
+        const icon = icons[type] || icons.success;
+
+        alertEl.id = alertId;
+        alertEl.className = `rounded-xl p-4 shadow-lg w-full transform transition-all duration-300 animate-slide-down-fade-in ${theme.base}`;
+        alertEl.innerHTML = `
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    ${icon}
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium">${message}</p>
+                </div>
+                <div class="ml-auto pl-3">
+                    <div class="-mx-1.5 -my-1.5">
+                        <button type="button" onclick="document.getElementById('${alertId}').remove()" class="inline-flex rounded-md p-1.5 ${theme.hover} focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme.ring}">
+                            <span class="sr-only">Dismiss</span>
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        alertContainer.appendChild(alertEl);
+
+        setTimeout(() => {
+            const el = document.getElementById(alertId);
+            if (el) {
+                el.classList.remove('animate-slide-down-fade-in');
+                el.classList.add('animate-fade-out-up');
+                el.addEventListener('animationend', () => el.remove(), { once: true });
+            }
+        }, 4000);
+    }
+    // --- END: Added Alert Functionality ---
+
+    // --- ENHANCED STATE MANAGEMENT ---
+    class ShopState {
+        constructor() {
+            this.cart = {};
+            this.products = {};
+            this.selectedSizes = {};
+            this.selectedQuantities = {};
+        }
+
+        // Get cart key for item and size combination
+        getCartKey(itemId, size) {
+            return `${itemId}-${size}`;
+        }
+
+        // Get current quantity for item
+        getCurrentQuantity(itemId) {
+            return this.selectedQuantities[itemId] || 1;
+        }
+
+        // Set quantity for item
+        setQuantity(itemId, quantity) {
+            this.selectedQuantities[itemId] = Math.max(1, quantity);
+            this.updateCardUI(itemId);
+            this.updateModalUI(itemId);
+            // Don't automatically render actions here, let the caller handle it
+        }
+
+        // Get current size for item
+        getCurrentSize(itemId) {
+            if (!this.selectedSizes[itemId] && this.products[itemId]) {
+                const sizes = this.products[itemId].sizes.split(',').map(s => s.trim());
+                this.selectedSizes[itemId] = sizes[0] || '';
+            }
+            return this.selectedSizes[itemId];
+        }
+
+        // Set size for item
+        setSize(itemId, size) {
+            this.selectedSizes[itemId] = size;
+            // Sync quantity with cart for the new size
+            this.syncQuantityWithCart(itemId, size);
+            this.updateAllUI(itemId);
+        }
+
+        // Get cart quantity for specific item and size
+        getCartQuantity(itemId, size) {
+            const key = this.getCartKey(itemId, size || this.getCurrentSize(itemId));
+            return this.cart[key] || 0;
+        }
+
+        // Add item to cart
+        addToCart(itemId) {
+            const size = this.getCurrentSize(itemId);
+            const quantity = this.getCurrentQuantity(itemId);
+            const key = this.getCartKey(itemId, size);
+            
+            this.cart[key] = (this.cart[key] || 0) + quantity;
+            showAlert("Mahsulot savatga qo'shildi!"); // MODIFIED: Call alert
+            this.syncCartState();
+            this.updateAllUI(itemId);
+        }
+
+        // Update item in cart
+        updateCartItem(itemId) {
+            const size = this.getCurrentSize(itemId);
+            const quantity = this.getCurrentQuantity(itemId);
+            const key = this.getCartKey(itemId, size);
+            
+            this.cart[key] = quantity;
+            showAlert("Savat yangilandi!"); // MODIFIED: Call alert
+            this.syncCartState();
+            this.updateAllUI(itemId);
+        }
+
+        // Remove item from cart
+        removeFromCart(itemId) {
+            const size = this.getCurrentSize(itemId);
+            const key = this.getCartKey(itemId, size);
+            
+            delete this.cart[key];
+            showAlert("Mahsulot o'chirildi", 'info'); // MODIFIED: Call alert
+            this.syncCartState();
+            this.updateAllUI(itemId);
+        }
+
+        // Check if item is in cart
+        isInCart(itemId, size) {
+            const key = this.getCartKey(itemId, size || this.getCurrentSize(itemId));
+            return this.cart[key] > 0;
+        }
+
+        // Sync quantity with cart when switching between items or sizes
+        syncQuantityWithCart(itemId, size) {
+            const cartQuantity = this.getCartQuantity(itemId, size);
+            if (cartQuantity > 0) {
+                this.selectedQuantities[itemId] = cartQuantity;
+            } else if (!this.selectedQuantities[itemId]) {
+                this.selectedQuantities[itemId] = 1;
+            }
+        }
+
+        // Sync cart state and update UI
+        syncCartState() {
+            const totalItems = Object.values(this.cart).reduce((sum, qty) => sum + qty, 0);
+            
+            // Update cart badge
+            const cartCountEl = document.getElementById('cartCount');
+            if (cartCountEl) {
+                cartCountEl.textContent = totalItems;
+                cartCountEl.classList.add('animate-bounce-soft');
+                setTimeout(() => cartCountEl.classList.remove('animate-bounce-soft'), 600);
+            }
+
+            this.renderCartItems();
+            this.debouncedUpdateCart();
+        }
+
+        // Update all UI elements for a specific item
+        updateAllUI(itemId) {
+            // First sync quantity with cart if item is in cart
+            const size = this.getCurrentSize(itemId);
+            this.syncQuantityWithCart(itemId, size);
+            
+            this.updateCardUI(itemId);
+            this.updateModalUI(itemId);
+            this.renderProductActions(itemId);
+        }
+
+        // Update card UI elements
+        updateCardUI(itemId) {
+            const quantity = this.getCurrentQuantity(itemId);
+            const size = this.getCurrentSize(itemId);
+
+            // Update counter
+            const cardCounter = document.getElementById(`counter-${itemId}`);
+            if (cardCounter) cardCounter.textContent = quantity;
+
+            // Update size button
+            const cardSizeBtn = document.getElementById(`size-button-${itemId}`);
+            if (cardSizeBtn) {
+                const sizeSpan = cardSizeBtn.querySelector('span');
+                if (sizeSpan) sizeSpan.textContent = size;
+            }
+        }
+
+        // Update modal UI elements
+        updateModalUI(itemId) {
+            const currentModalItem = document.getElementById('imagePreviewModal')?.dataset?.currentItemId;
+            if (currentModalItem !== itemId) return;
+
+            const quantity = this.getCurrentQuantity(itemId);
+            const size = this.getCurrentSize(itemId);
+
+            // Update modal counter
+            const previewCounter = document.getElementById('preview-counter');
+            if (previewCounter) previewCounter.textContent = quantity;
+
+            // Update modal size button
+            const previewSizeBtn = document.getElementById('preview-size-button');
+            if (previewSizeBtn) {
+                const sizeSpan = previewSizeBtn.querySelector('span');
+                if (sizeSpan) sizeSpan.textContent = size;
+            }
+
+            // Update modal actions
+            const previewActionDiv = document.getElementById('preview-action-buttons');
+            if (previewActionDiv) {
+                previewActionDiv.innerHTML = this.generateActionButtons(itemId);
+            }
+        }
+
+        // Generate action buttons HTML
+        generateActionButtons(itemId) {
+            const size = this.getCurrentSize(itemId);
+            const isInCart = this.isInCart(itemId, size);
+
+            if (isInCart) {
+                // Ensure quantity matches what's in cart
+                const cartQty = this.getCartQuantity(itemId, size);
+                this.selectedQuantities[itemId] = cartQty;
+                
+                return `
+                    <div class="flex items-center gap-2">
+                        <button onclick="shopState.removeFromCart('${itemId}')" class="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl flex-1 transition-all duration-200">O'chirish</button>
+                        <button onclick="shopState.updateCartItem('${itemId}')" class="btn-primary text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl flex-1" ${cartQty === this.getCurrentQuantity(itemId) ? 'disabled style="opacity: 0.6; cursor: not-allowed;"' : ''}>Yangilash</button>
+                    </div>`;
+            } else {
+                return `<button onclick="shopState.addToCart('${itemId}')" class="btn-primary w-full text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200">Savatga qo'shish</button>`;
+            }
+        }
+
+        // Render product actions
+        renderProductActions(itemId) {
+            const actionHTML = this.generateActionButtons(itemId);
+            
+            // Update card actions
+            const cardActionDiv = document.getElementById(`action-${itemId}`);
+            if (cardActionDiv) cardActionDiv.innerHTML = actionHTML;
+            
+            // Update modal actions if it's the current item
+            const currentModalItem = document.getElementById('imagePreviewModal')?.dataset?.currentItemId;
+            if (currentModalItem === itemId) {
+                const previewActionDiv = document.getElementById('preview-action-buttons');
+                if (previewActionDiv) previewActionDiv.innerHTML = actionHTML;
+            }
+        }
+
+        // Render cart items
+        renderCartItems() {
+            const cartItemsEl = document.getElementById('cartItems');
+            const cartTotalEl = document.getElementById('cartTotal');
+            const orderBtn = document.getElementById('orderBtn');
+            
+            if (!cartItemsEl || !cartTotalEl || !orderBtn) return;
+
+            cartItemsEl.innerHTML = '';
+            let totalPrice = 0;
+            
+            if (Object.keys(this.cart).length === 0) {
+                cartItemsEl.innerHTML = `<p class="text-center text-gray-500 py-10">Sizning savatingiz bo'sh.</p>`;
+                cartTotalEl.textContent = this.formatPrice(0);
+                orderBtn.disabled = true;
+                return;
+            }
+            
+            for (const key in this.cart) {
+                if (this.cart[key] <= 0) continue;
+                
+                const [itemId, size] = key.split('-');
+                const product = this.products[itemId];
+                
+                if (product) {
+                    const itemTotal = parseFloat(product.price) * this.cart[key];
+                    totalPrice += itemTotal;
+                    
+                    cartItemsEl.innerHTML += `
+                        <div class="bg-white rounded-xl p-4 shadow-sm">
+                            <div class="flex items-center gap-4">
+                                <img src="${product.image}" alt="${product.title}" class="w-16 h-16 object-cover rounded-lg">
+                                <div class="flex-1">
+                                    <p class="font-bold text-gray-800">${product.title}</p>
+                                    <p class="text-sm text-gray-500">O'lcham: ${size}</p>
+                                    <p class="text-brand font-bold">${this.formatPrice(itemTotal)}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="updateCartQuantity('${key}', ${this.cart[key] - 1})" 
+                                            class="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 flex items-center justify-center font-bold text-gray-700 transition-colors duration-200" 
+                                            ${this.cart[key] <= 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>-</button>
+                                    <span class="font-bold text-brand min-w-[32px] text-center">${this.cart[key]} ta</span>
+                                    <button onclick="updateCartQuantity('${key}', ${this.cart[key] + 1})" 
+                                            class="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 flex items-center justify-center font-bold text-gray-700 transition-colors duration-200">+</button>
+                                </div>
+                            </div>
+                            <div class="mt-3 flex gap-2">
+                                <button onclick="removeCartItem('${key}')" 
+                                        class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg font-semibold transition-colors duration-200">
+                                    O'chirish
+                                </button>
+                            </div>
+                        </div>`;
+                }
+            }
+            
+            cartTotalEl.textContent = this.formatPrice(totalPrice);
+            orderBtn.disabled = false;
+        }
+
+        // Format price utility
+        formatPrice(price) {
+            return new Intl.NumberFormat('uz-UZ', { 
+                style: 'currency', 
+                currency: 'UZS', 
+                minimumFractionDigits: 0 
+            }).format(price).replace('UZS', 'UZS');
+        }
+
+        // Debounced cart update
+        debouncedUpdateCart = this.debounce(async () => {
+            try {
+                const response = await fetch('/api/cart/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        cart: this.cart,
+                        initData: window.Telegram.WebApp.initData,
+                    })
+                });
+                if (!response.ok) console.error("Failed to update cart on server");
+            } catch (e) {
+                console.error("Network error during cart update:", e);
+            }
+        }, 500);
+
+        // Debounce utility
+        debounce(func, delay) {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay);
+            };
+        }
+    }
+
+    // Global state instance
+    const shopState = new ShopState();
+
+    // --- DOM ELEMENTS ---
+    const cartDrawer = document.getElementById('cartDrawer');
+    const cartBackdrop = document.getElementById('cartBackdrop');
+    const container = document.getElementById('container');
+    const loader = document.getElementById('loader');
+    const imagePreviewModal = document.getElementById('imagePreviewModal');
+    const previewImage = document.getElementById('previewImage');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewPrice = document.getElementById('previewPrice');
+    const previewDescription = document.getElementById('previewDescription');
+    const previewControls = document.getElementById('previewControls');
+
+    // --- GLOBAL FUNCTIONS (for onclick handlers) ---
+    window.toggleCart = function() {
+        cartDrawer.classList.toggle('translate-x-full');
+        cartBackdrop.classList.toggle('hidden');
+    };
+
+    window.handleSizeSelection = function(itemId, size) {
+        shopState.setSize(itemId, size);
+    };
+
+    window.increaseQuantity = function(itemId) {
+        const currentQty = shopState.getCurrentQuantity(itemId);
+        const size = shopState.getCurrentSize(itemId);
+        const isInCart = shopState.isInCart(itemId, size);
+        
+        // If item is in cart, allow increasing beyond cart quantity for updates
+        if (isInCart) {
+            shopState.setQuantity(itemId, currentQty + 1);
+            // Enable update button since quantity changed
+            updateButtonState(itemId);
+        } else {
+            shopState.setQuantity(itemId, currentQty + 1);
+        }
+    };
+
+    window.decreaseQuantity = function(itemId) {
+        const currentQty = shopState.getCurrentQuantity(itemId);
+        const size = shopState.getCurrentSize(itemId);
+        const isInCart = shopState.isInCart(itemId, size);
+        
+        if (currentQty > 1) {
+            shopState.setQuantity(itemId, currentQty - 1);
+            // Enable update button since quantity changed
+            if (isInCart) {
+                updateButtonState(itemId);
+            }
+        }
+    };
+
+    // Cart management functions
+    window.updateCartQuantity = function(cartKey, newQuantity) {
+        if (newQuantity <= 0) {
+            delete shopState.cart[cartKey];
+        } else {
+            shopState.cart[cartKey] = newQuantity;
+        }
+        
+        // Update UI states for the affected item
+        const [itemId, size] = cartKey.split('-');
+        if (shopState.selectedSizes[itemId] === size) {
+            shopState.selectedQuantities[itemId] = newQuantity;
+            shopState.updateAllUI(itemId);
+        }
+        
+        shopState.syncCartState();
+    };
+
+    window.removeCartItem = function(cartKey) {
+        delete shopState.cart[cartKey];
+        showAlert("Mahsulot o'chirildi", 'info'); // MODIFIED: Call alert
+        
+        // Update UI states for the affected item
+        const [itemId, size] = cartKey.split('-');
+        if (shopState.selectedSizes[itemId] === size) {
+            shopState.selectedQuantities[itemId] = 1;
+            shopState.updateAllUI(itemId);
+        }
+        
+        shopState.syncCartState();
+    };
+
+    // Helper function to update button state
+    function updateButtonState(itemId) {
+        const size = shopState.getCurrentSize(itemId);
+        const currentQty = shopState.getCurrentQuantity(itemId);
+        const cartQty = shopState.getCartQuantity(itemId, size);
+        const isInCart = shopState.isInCart(itemId, size);
+        
+        if (isInCart) {
+            // Find update buttons and enable/disable them
+            const cardUpdateBtn = document.querySelector(`#action-${itemId} button:last-child`);
+            const modalUpdateBtn = document.querySelector(`#preview-action-buttons button:last-child`);
+            
+            const shouldDisable = currentQty === cartQty;
+            
+            [cardUpdateBtn, modalUpdateBtn].forEach(btn => {
+                if (btn && btn.textContent.includes('Yangilash')) {
+                    btn.disabled = shouldDisable;
+                    btn.style.opacity = shouldDisable ? '0.6' : '1';
+                    btn.style.cursor = shouldDisable ? 'not-allowed' : 'pointer';
+                }
+            });
+        }
+    }
+
+    window.openImagePreview = function(itemId) {
+        const item = shopState.products[itemId];
+        if (!item) return;
+
+        imagePreviewModal.dataset.currentItemId = itemId;
+        
+        previewImage.src = item.image;
+        previewTitle.textContent = item.title;
+        previewPrice.textContent = shopState.formatPrice(item.price);
+        previewDescription.textContent = item.description || 'Mahsulot tavsifi mavjud emas.';
+
+        // Generate controls for the modal
+        const sizes = item.sizes.split(',').map(s => s.trim());
+        const currentSize = shopState.getCurrentSize(itemId);
+        const currentQuantity = shopState.getCurrentQuantity(itemId);
+        
+        let sizeMenuItemsHTML = '';
+        sizes.forEach(size => {
+            sizeMenuItemsHTML += `<a href="#" onclick="handleSizeSelection('${item.id}', '${size}'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${size}</a>`;
+        });
+        
+        previewControls.innerHTML = `
+            <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-2">
+                    <button onclick="decreaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold hover:bg-gray-300">-</button>
+                    <span id="preview-counter" class="font-bold text-lg text-brand min-w-[24px] text-center">${currentQuantity}</span>
+                    <button onclick="increaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold hover:bg-gray-300">+</button>
+                </div>
+                <div class="relative">
+                    <el-dropdown class="inline-block">
+                        <button id="preview-size-button" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
+                            <span class="truncate">${currentSize}</span>
+                            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
+                        </button>
+                        <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+                            <div class="py-1">${sizeMenuItemsHTML}</div>
+                        </el-menu>
+                    </el-dropdown>
+                </div>
+            </div>
+            <div id="preview-action-buttons">${shopState.generateActionButtons(itemId)}</div>
+        `;
+
+        imagePreviewModal.classList.remove('hidden');
+        setTimeout(() => imagePreviewModal.classList.add('visible'), 10); 
+    };
+
+    window.closeImagePreview = function() {
+        imagePreviewModal.classList.remove('visible');
+        setTimeout(() => {
+            imagePreviewModal.classList.add('hidden');
+            imagePreviewModal.dataset.currentItemId = '';
+            previewControls.innerHTML = '';
+        }, 300);
+    };
+
+    window.placeOrder = function() {
+        const orderBtn = document.getElementById('orderBtn');
+        orderBtn.disabled = true;
+        orderBtn.innerHTML = `<div class="loader !w-6 !h-6 !border-2 mx-auto"></div>`;
+
+        (async () => {
+            try {
+                const response = await fetch("/api/place-order", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ 
+                        cart: shopState.cart, 
+                        initData: window.Telegram.WebApp.initData 
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    window.Telegram.WebApp.close();
+                } else {
+                    alert(data.message || "Buyurtma berishda xatolik yuz berdi");
+                }
+            } catch (error) {
+                alert("Tarmoq xatosi. Iltimos, qayta urinib ko'ring.");
+            } finally {
+                orderBtn.disabled = false;
+                orderBtn.innerHTML = 'Buyurtma berish';
+            }
+        })();
+    };
+
+    // --- UI RENDERING ---
+    function renderProducts() {
+        if (Object.keys(shopState.products).length === 0) {
+            container.innerHTML = `<p class="text-center text-gray-500 col-span-full">Hozirda mahsulotlar mavjud emas.</p>`;
+            return;
+        }
+
+        let productHTML = '';
+        for (const item of Object.values(shopState.products)) {
+            const sizes = item.sizes.split(',').map(s => s.trim());
+            const defaultSize = sizes[0] || 'N/A';
+            
+            let sizeMenuItemsHTML = '';
+            sizes.forEach(size => {
+                sizeMenuItemsHTML += `<a href="#" onclick="handleSizeSelection('${item.id}', '${size}'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${size}</a>`;
+            });
+
+            productHTML += `
+            <div class="product-card shadow-lg rounded-3xl overflow-hidden flex flex-col animate-slide-up">
+              <img src="${item.image}" alt="${item.title}" loading="lazy" class="w-full h-56 object-cover cursor-pointer hover:scale-105 transition-transform duration-300" onclick="openImagePreview('${item.id}')">
+              <div class="flex flex-col p-6 flex-grow">
+                <div class="flex justify-between items-start w-full mb-4">
+                  <p class="font-bold text-xl text-gray-800 line-clamp-2">${item.title}</p>
+                  <p class="text-brand font-bold text-lg whitespace-nowrap ml-2">${shopState.formatPrice(item.price)}</p>
+                </div>
+                <div class="flex items-center justify-between w-full mb-4">
+                  <div class="flex items-center gap-2">
+                    <button onclick="decreaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold">-</button>
+                    <span id="counter-${item.id}" class="font-bold text-lg text-brand min-w-[24px] text-center">1</span>
+                    <button onclick="increaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold">+</button>
+                  </div>
+                  <div class="relative">
+                    <el-dropdown class="inline-block">
+                        <button id="size-button-${item.id}" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 transition-colors duration-200">
+                            <span class="truncate">${defaultSize}</span>
+                            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
+                        </button>
+                        <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+                            <div class="py-1">${sizeMenuItemsHTML}</div>
+                        </el-menu>
+                    </el-dropdown>
+                  </div>
+                </div>
+                <div id="action-${item.id}" class="w-full mt-auto"></div>
+              </div>
+            </div>`;
+        }
+        container.innerHTML = productHTML;
+
+        // Initialize default states and render actions for all products
+        for (const item of Object.values(shopState.products)) {
+            const sizes = item.sizes.split(',').map(s => s.trim());
+            
+            // Initialize default states if not already set
+            if (!shopState.selectedQuantities[item.id]) {
+                shopState.selectedQuantities[item.id] = 1;
+            }
+            if (!shopState.selectedSizes[item.id]) {
+                shopState.selectedSizes[item.id] = sizes[0] || '';
+            }
+            
+            // Render initial actions and update UI
+            shopState.renderProductActions(item.id);
+            shopState.updateCardUI(item.id);
+        }
+    }
+
+    // --- EVENT LISTENERS ---
+    document.getElementById('cartBtn').addEventListener('click', toggleCart);
+    cartBackdrop.addEventListener('click', toggleCart);
+
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('imagePreviewModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closeImagePreview();
+            }
+            
+            if (!cartBackdrop.classList.contains('hidden')) {
+                toggleCart();
+            }
+        }
+    });
+
+    // --- INITIALIZATION ---
+    document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Telegram WebApp
+        if (window.Telegram?.WebApp) {
+            window.Telegram.WebApp.ready();
+        }
+        
+        // Fetch initial data
+        fetch("/auth/", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                initData: window.Telegram?.WebApp?.initData || ''
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Initialize shop state with server data
+                shopState.products = data.items || {};
+                shopState.cart = data.cart_items || {};
+                
+                // Initialize selected quantities based on cart
+                for (const key in shopState.cart) {
+                    const [itemId] = key.split('-');
+                    if (shopState.cart[key] > 0) {
+                        shopState.selectedQuantities[itemId] = shopState.cart[key];
+                    }
+                }
+                
+                // Render products and sync cart state
+                renderProducts();
+                shopState.syncCartState();
+            } else {
+                // Handle errors
+                if (data.detail === 'You have an incomplete order.') { 
+                    window.location.href = "/errors/incomplete-order";
+                } else {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-20">
+                            <div class="text-red-500 text-6xl mb-4">⚠️</div>
+                            <p class="text-red-600 text-xl font-semibold">${data.detail || 'Ma\'lumotlarni yuklashda xatolik yuz berdi'}</p>
+                            <button onclick="location.reload()" class="mt-4 btn-primary text-white px-6 py-3 rounded-xl font-semibold">
+                                Qayta urinish
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        })
+        .catch((err) => {
+            console.error('Initialization error:', err);
+            container.innerHTML = `
+                <div class="col-span-full text-center py-20">
+                    <div class="text-red-500 text-6xl mb-4">🔌</div>
+                    <p class="text-red-600 text-xl font-semibold">Server bilan bog'lanishda xatolik</p>
+                    <p class="text-gray-500 mt-2">Internet aloqangizni tekshirib, qayta urinib ko'ring</p>
+                    <button onclick="location.reload()" class="mt-4 btn-primary text-white px-6 py-3 rounded-xl font-semibold">
+                        Qayta yuklash
+                    </button>
+                </div>
+            `;
+        })
+        .finally(() => {
+            // Hide loader and show content
+            loader.classList.add("hidden");
+            container.classList.remove("hidden");
+            
+            // Handle logo display
+            const logoEl = document.getElementById('shop-logo');
+            if (logoEl && logoEl.src && !logoEl.src.includes('None') && !logoEl.src.includes('null')) {
+                logoEl.style.display = 'block';
+                logoEl.onerror = () => logoEl.style.display = 'none';
+            } else if (logoEl) {
+                logoEl.style.display = 'none';
+            }
+        });
+    });
+
+    // --- PERFORMANCE OPTIMIZATIONS ---
+    
+    // Lazy loading for images
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    img.classList.remove('lazy');
+                    imageObserver.unobserve(img);
+                }
+            });
+        });
+
+        // Observer will be applied to images when they're created
+        window.observeImage = (img) => imageObserver.observe(img);
+    }
+
+    // Prevent zoom on double tap (mobile optimization)
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+
+    // Add visual feedback for touch interactions
+    document.addEventListener('touchstart', (e) => {
+        if (e.target.matches('button, .counter-btn, .product-card img')) {
+            e.target.style.transform = 'scale(0.95)';
+        }
+    });
+
+    document.addEventListener('touchend', (e) => {
+        if (e.target.matches('button, .counter-btn, .product-card img')) {
+            setTimeout(() => {
+                e.target.style.transform = '';
+            }, 150);
+        }
+    });
+
+</script>
+</body>
+</html>

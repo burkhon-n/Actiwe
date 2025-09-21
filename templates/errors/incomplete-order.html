@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="uz"></html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yakunlanmagan buyurtma</title>
+  <script src="https://telegram.org/js/telegram-web-app.js?59"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#1e40af',
+              light: '#3b82f6',
+              dark: '#1e3a8a',
+            },
+            accent: {
+              DEFAULT: '#0f172a',
+              light: '#334155',
+              dark: '#0c1425',
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+            'slide-up': 'slideUp 0.3s ease-out',
+            'bounce-soft': 'bounceSoft 0.6s ease-in-out',
+            'pulse-soft': 'pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            bounceSoft: {
+              '0%, 100%': { transform: 'scale(1)' },
+              '50%': { transform: 'scale(1.05)' }
+            },
+            pulseSoft: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.8' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-effect {
+      backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(30, 64, 175, 0.3);
+    }
+    
+    .btn-primary:disabled {
+      background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .btn-primary:disabled:hover {
+      background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(220, 38, 38, 0.3);
+    }
+    
+    .btn-danger:disabled {
+      background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .warning-icon {
+      animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-orange-50 to-red-50 text-gray-900 font-sans min-h-screen flex items-center justify-center p-4">
+  
+  <!-- Main Content -->
+  <div class="glass-effect rounded-3xl p-8 text-center shadow-2xl max-w-md w-full animate-fade-in">
+    <!-- Warning Icon -->
+    <div class="w-20 h-20 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6 warning-icon">
+      <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+    </div>
+    
+    <!-- Title -->
+    <h3 class="text-3xl font-bold text-gray-800 mb-4">Yakunlanmagan buyurtma aniqlandi!</h3>
+    
+    <!-- Message -->
+    <p class="text-gray-600 mb-8 leading-relaxed text-md">
+      Sizda yakunlanmagan buyurtma bor. Avval uni yakunlang yoki bekor qiling. Shundan so‘ng yangi buyurtma berishingiz mumkin!
+    </p>
+    
+    <!-- Buttons -->
+    <div class="space-y-4">
+      <button onclick="completeOrder()" 
+              class="w-full btn-primary text-white py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 animate-slide-up">
+        Buyurtmani yakunlash
+      </button>
+      
+      <button onclick="cancelOrder()" id="cancelOrderBtn"
+              class="w-full btn-danger text-white py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 animate-slide-up">
+        Buyurtmani bekor qilish
+      </button>
+    </div>
+  </div>
+
+  <!-- Success Overlay (Hidden by default) -->
+  <div id="successOverlay" class="fixed inset-0 bg-green-500 bg-opacity-95 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-3xl p-8 text-center shadow-2xl max-w-sm mx-4 animate-slide-up">
+      <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Buyurtma bekor qilindi</h2>
+      <p class="text-gray-600 mb-4">Sizning buyurtmangiz muvaffaqiyatli bekor qilindi</p>
+      <p class="text-gray-500">Oyna <span id="countdown" class="font-bold text-green-600">3</span> soniya ichida yopiladi...</p>
+    </div>
+  </div>
+
+  <!-- Error Overlay (Hidden by default) -->
+  <div id="errorOverlay" class="fixed inset-0 bg-red-500 bg-opacity-95 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-3xl p-8 text-center shadow-2xl max-w-sm mx-4 animate-slide-up">
+      <div class="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Xatolik</h2>
+      <p id="errorMessage" class="text-gray-600 mb-6">Xato yuz berdi</p>
+      <button onclick="hideError()" 
+              class="btn-primary text-white px-6 py-3 rounded-xl font-semibold">
+        Qayta urinib ko‘rish
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Telegram WebApp
+    document.addEventListener("DOMContentLoaded", function () {
+      window.Telegram.WebApp.ready();
+    });
+
+    function completeOrder() {
+      // Simply close the webapp to let user complete the order
+      window.Telegram.WebApp.close();
+    }
+
+    function cancelOrder() {
+      const cancelBtn = document.getElementById('cancelOrderBtn');
+      
+      // Disable button and show loading state
+      cancelBtn.disabled = true;
+      cancelBtn.classList.add('opacity-75', 'cursor-not-allowed');
+      cancelBtn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Bekor qilinmoqda...
+      `;
+
+      (async () => {
+        try {
+          const response = await fetch("/api/cancel-incomplete-order", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              initData: window.Telegram.WebApp.initData,
+              initDataUnsafe: window.Telegram.WebApp.initDataUnsafe
+            })
+          });
+          const data = await response.json();
+          
+          if (data.success) {
+            // Show cancellation success and close webapp
+            showCancellationSuccess();
+          } else {
+            // Show error message
+            showError(data.message || "Failed to cancel order");
+          }
+        } catch (error) {
+          console.error("Error canceling order:", error);
+          showError("Network error occurred. Please try again.");
+        } finally {
+          // Re-enable button
+          cancelBtn.disabled = false;
+          cancelBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+          cancelBtn.innerHTML = 'Buyurtmani bekor qilish';
+        }
+      })();
+    }
+
+    function showCancellationSuccess() {
+      const successOverlay = document.getElementById('successOverlay');
+      const countdownEl = document.getElementById('countdown');
+      
+      successOverlay.classList.remove('hidden');
+      
+      // Start countdown
+      let timeLeft = 3;
+      countdownEl.textContent = timeLeft;
+      
+      const countdown = setInterval(() => {
+        timeLeft--;
+        countdownEl.textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+          clearInterval(countdown);
+          // Close Telegram WebApp
+          window.location.href = "/menu"; // Redirect to menu or close
+        }
+      }, 1000);
+    }
+
+    function showError(message) {
+      const errorOverlay = document.getElementById('errorOverlay');
+      const errorMessage = document.getElementById('errorMessage');
+      
+      errorMessage.textContent = message;
+      errorOverlay.classList.remove('hidden');
+      
+      // Auto-hide error after 10 seconds
+      setTimeout(() => {
+        hideError();
+      }, 10000);
+    }
+
+    function hideError() {
+      const errorOverlay = document.getElementById('errorOverlay');
+      errorOverlay.classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

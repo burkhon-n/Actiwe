@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Super Admin Dashboard</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#1e40af',
+              light: '#3b82f6',
+              dark: '#1e3a8a',
+            },
+            accent: {
+              DEFAULT: '#0f172a',
+              light: '#334155',
+              dark: '#0c1425',
+            }
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    .drop-area { border: 2px dashed #cbd5e1; transition: all 0.2s ease; }
+    .drop-area.hover { border-color: #1e40af; background-color: #f1f5f9; }
+    .image-preview { position: relative; height: 100%; }
+    .image-preview::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: rgba(0, 0, 0, 0.2);
+      transition: opacity 0.2s ease;
+      opacity: 0;
+    }
+    .image-preview:hover::after { opacity: 1; }
+    .modal-backdrop { background-color: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+    .admin-list-row { display: flex; align-items: center; padding: 0.75rem; border-radius: 0.5rem; background-color: #f8fafc; }
+    .size-selector {
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      background-color: white; border-color: #cbd5e1;
+      transition: all 0.2s ease; cursor: pointer;
+    }
+    .size-selector:hover { border-color: #64748b; }
+    .size-selector:focus { border-color: #1e40af; outline: none; box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.5); }
+    .loader {
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e5e7eb;
+        border-radius: 50%;
+        border-top-color: #1e40af;
+        animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased p-4 sm:p-6">
+  <div id="main-container" class="max-w-xl mx-auto w-full">
+    <!-- Loading state -->
+    <div id="loading" class="flex flex-col items-center justify-center py-20">
+      <div class="loader mb-4"></div>
+      <p class="text-lg text-gray-600">Loading...</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error" class="hidden text-center py-20">
+      <p class="text-red-500 font-semibold text-lg">An error occurred while loading.</p>
+    </div>
+
+    <!-- Main content -->
+    <div id="content-container" class="hidden">
+      <div class="bg-white p-4 sm:p-8 rounded-xl shadow-lg">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+          <button id="back-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+          </button>
+          <h1 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 flex-1">Shop Logo</h1>
+          <div class="w-6 hidden sm:block"></div>
+        </div>
+
+        <!-- Logo upload -->
+        <div class="mb-6">
+          <label class="block text-gray-700 font-bold mb-2">Update Shop Logo</label>
+          <div id="logo-drop-area" class="relative drop-area flex items-center justify-center p-6 text-center rounded-lg cursor-pointer w-full h-32">
+            <input type="file" id="logo-file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*">
+            <div id="logo-placeholder" class="text-gray-500 {% if logo %}hidden{% endif %}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 text-gray-400"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586
+                     a2 2 0 012.828 0L20 14m-2-6h.01M6 20h12a2 2 0
+                     002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0
+                     002 2z" />
+              </svg>
+              <span>Drag and drop a logo, or click to upload.</span>
+            </div>
+            <div id="logo-preview" class="absolute inset-0 {% if logo %}block{% else %}hidden{% endif %}" style="background-size: contain; background-position: center; background-repeat: no-repeat; {% if logo %}background-image: url('{{ logo }}');{% endif %}">
+                <button type="button" id="remove-logo-btn" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+          </div>
+        </div>
+
+        <button id="save-logo-btn"
+          class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors">
+          Save Logo
+        </button>
+      </div>
+
+      <!-- Admins section -->
+      <div class="bg-white p-4 sm:p-8 rounded-xl shadow-lg mt-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Admins</h2>
+
+        <!-- Add admin form -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-6">
+          <input type="text" id="admin-id-input" placeholder="Telegram ID"
+            class="flex-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+          <select id="admin-role-selector"
+            class="w-full sm:w-auto px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 size-selector">
+            <option value="admin">Admin</option>
+            <option value="sadmin">Super Admin</option>
+          </select>
+          <button id="add-admin-btn"
+            class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors">
+            Add
+          </button>
+        </div>
+
+        <!-- Admins list -->
+        <div id="admins-list" class="space-y-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal"
+    class="fixed inset-0 hidden flex items-center justify-center z-50 modal-backdrop">
+    <div class="bg-white rounded-xl p-6 shadow-xl max-w-sm w-11/12 text-center">
+      <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor"
+        viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0
+             2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464
+             0L3.344 18c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <h3 class="text-xl font-bold text-gray-900 mb-2">Are you sure?</h3>
+      <p class="text-gray-600 mb-4">Do you really want to delete this admin? This action cannot be undone.</p>
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+        <button id="confirm-delete-btn"
+          class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors">
+          Yes, delete it
+        </button>
+        <button id="cancel-delete-btn"
+          class="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loadingElement = document.getElementById('loading');
+      const errorElement = document.getElementById('error');
+      const contentContainer = document.getElementById('content-container');
+      const logoDropArea = document.getElementById('logo-drop-area');
+      const logoFileInput = document.getElementById('logo-file-input');
+      const logoPlaceholder = document.getElementById('logo-placeholder');
+      const logoPreview = document.getElementById('logo-preview');
+      const removeLogoBtn = document.getElementById('remove-logo-btn');
+      const backBtn = document.getElementById('back-btn');
+      const saveLogoBtn = document.getElementById('save-logo-btn');
+      const adminsList = document.getElementById('admins-list');
+      const addAdminBtn = document.getElementById('add-admin-btn');
+      const adminIdInput = document.getElementById('admin-id-input');
+      const adminRoleSelector = document.getElementById('admin-role-selector');
+      const deleteModal = document.getElementById('delete-modal');
+      const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+      const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+      
+      let uploadedFile = null;
+      let adminToDeleteId = null;
+      let initData = null;
+      let initDataUnsafe = null;
+
+      const showLoading = () => {
+        loadingElement.classList.remove('hidden');
+        errorElement.classList.add('hidden');
+        contentContainer.classList.add('hidden');
+      };
+
+      const showError = (message) => {
+        loadingElement.classList.add('hidden');
+        errorElement.classList.remove('hidden');
+        contentContainer.classList.add('hidden');
+        errorElement.innerHTML = `<p class="text-red-500 font-semibold text-lg">${message}</p>`;
+      };
+
+      const showContent = () => {
+        loadingElement.classList.add('hidden');
+        errorElement.classList.add('hidden');
+        contentContainer.classList.remove('hidden');
+      };
+      
+      const redirectToAdmin = () => {
+        const urlParams = new URLSearchParams();
+        urlParams.append('initData', initData);
+        urlParams.append('initDataUnsafe', JSON.stringify(initDataUnsafe));
+        window.location.href = `/admin?${urlParams.toString()}`;
+      };
+
+      const fetchAdmins = async () => {
+        try {
+          const response = await fetch("/api/admin/admins", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, initDataUnsafe })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to fetch admins.');
+          }
+
+          const admins = await response.json();
+          renderAdmins(admins);
+        } catch (err) {
+          console.error('Error fetching admins:', err);
+          adminsList.innerHTML = `<p class="text-red-500 text-center py-4">Failed to load admins.</p>`;
+        }
+      };
+      
+      const renderAdmins = (admins) => {
+        adminsList.innerHTML = '';
+        if (admins.length === 0) {
+          adminsList.innerHTML = `<p class="text-gray-500 text-center py-4">No admins found.</p>`;
+          return;
+        }
+        
+        admins.forEach((admin, index) => {
+          const adminRow = document.createElement('div');
+          adminRow.id = `admin-row-${admin.id}`;
+          adminRow.className = 'admin-list-row flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-4 border-b last:border-b-0 border-gray-200';
+          adminRow.innerHTML = `
+            <div class="flex-1 flex flex-col sm:flex-row sm:items-center w-full">
+              <span>
+                <span class="font-bold text-gray-500">${index + 1}.</span>
+                <span class="font-bold text-gray-800 truncate">ID: ${admin.telegram_id}</span>
+              </span>
+              <span class="text-sm text-gray-600 ml-2">Role: ${admin.role}</span>
+            </div>
+            <button onclick="showDeleteModal(${admin.id})" class="w-full sm:w-auto text-white bg-red-500 px-3 py-1 rounded-lg hover:bg-red-600 transition-colors">
+              Delete
+            </button>
+          `;
+          adminsList.appendChild(adminRow);
+        });
+      };
+
+      // Drag & drop
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        logoDropArea.addEventListener(eventName, e => {
+          e.preventDefault(); e.stopPropagation();
+        });
+      });
+      ['dragenter', 'dragover'].forEach(eventName => {
+        logoDropArea.addEventListener(eventName, () => logoDropArea.classList.add('hover'));
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        logoDropArea.addEventListener(eventName, () => logoDropArea.classList.remove('hover'));
+      });
+      logoDropArea.addEventListener('drop', e => {
+        uploadedFile = e.dataTransfer.files[0]; handleFile(uploadedFile);
+      });
+      logoFileInput.addEventListener('change', e => {
+        uploadedFile = e.target.files[0]; handleFile(uploadedFile);
+      });
+
+      removeLogoBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        resetLogoInput();
+      });
+
+      const handleFile = (file) => {
+        if (file && file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            logoPreview.style.backgroundImage = `url(${e.target.result})`;
+            logoPreview.classList.remove('hidden');
+            logoPlaceholder.classList.add('hidden');
+          };
+          reader.readAsDataURL(file);
+        } else {
+          alert('Please upload a valid image file.');
+          resetLogoInput();
+        }
+      };
+
+      const resetLogoInput = () => {
+        logoFileInput.value = '';
+        uploadedFile = null;
+        logoPreview.style.backgroundImage = '';
+        logoPreview.classList.add('hidden');
+        logoPlaceholder.classList.remove('hidden');
+      };
+
+      backBtn.addEventListener('click', redirectToAdmin);
+      
+      saveLogoBtn.addEventListener('click', async () => {
+          if (!uploadedFile) {
+              alert('Please select a logo to upload first.');
+              return;
+          }
+
+          const formData = new FormData();
+          formData.append('image', uploadedFile);
+          formData.append('initData', initData);
+          const unsafeDataString = typeof initDataUnsafe === 'string' ? initDataUnsafe : JSON.stringify(initDataUnsafe);
+          formData.append('initDataUnsafe', unsafeDataString);
+
+          try {
+              saveLogoBtn.disabled = true;
+              saveLogoBtn.textContent = 'Uploading...';
+
+              const response = await fetch('/api/admin/logo/upload', {
+                  method: 'POST',
+                  body: formData,
+              });
+
+              const result = await response.json();
+              if (response.ok && result.success) {
+                  alert(result.message);
+              } else {
+                  alert(`Error: ${result.detail || result.message}`);
+              }
+          } catch (error) {
+              console.error('Failed to upload logo:', error);
+              alert('An unexpected error occurred during upload.');
+          } finally {
+              saveLogoBtn.disabled = false;
+              saveLogoBtn.textContent = 'Save Logo';
+          }
+      });
+
+      addAdminBtn.addEventListener('click', async () => {
+          const telegramId = parseInt(adminIdInput.value.trim(), 10);
+          const role = adminRoleSelector.value;
+          
+          if (!telegramId || isNaN(telegramId)) {
+              alert('Please enter a valid numeric Telegram ID.');
+              return;
+          }
+
+          try {
+              const response = await fetch('/api/admin/add', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                      telegram_id: telegramId,
+                      role: role,
+                      initData: initData,
+                      initDataUnsafe: initDataUnsafe
+                  })
+              });
+              
+              const result = await response.json();
+              if (response.ok && result.success) {
+                  alert('Admin added successfully!');
+                  adminIdInput.value = '';
+                  await fetchAdmins();
+              } else {
+                  alert(`Error: ${result.detail || result.message}`);
+              }
+          } catch (error) {
+              console.error('Failed to add admin:', error);
+              alert('An unexpected error occurred.');
+          }
+      });
+      
+      window.showDeleteModal = (id) => {
+        adminToDeleteId = id; deleteModal.classList.remove('hidden');
+      };
+
+      confirmDeleteBtn.addEventListener('click', async () => {
+          if (!adminToDeleteId) return;
+
+          try {
+              const response = await fetch(`/api/admin/delete/${adminToDeleteId}`, {
+                  method: 'DELETE',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                      initData: initData,
+                      initDataUnsafe: initDataUnsafe
+                  })
+              });
+              
+              const result = await response.json();
+              if (response.ok && result.success) {
+                  alert('Admin deleted successfully!');
+                  const row = document.getElementById(`admin-row-${adminToDeleteId}`);
+                  if (row) row.remove();
+              } else {
+                  alert(`Error: ${result.detail || result.message}`);
+              }
+          } catch (error) {
+              console.error('Failed to delete admin:', error);
+              alert('An unexpected error occurred.');
+          } finally {
+              deleteModal.classList.add('hidden');
+              adminToDeleteId = null;
+          }
+      });
+
+      cancelDeleteBtn.addEventListener('click', () => {
+        deleteModal.classList.add('hidden'); adminToDeleteId = null;
+      });
+
+      const checkAuthAndLoad = async () => {
+        showLoading();
+        try {
+          if (!window.Telegram || !window.Telegram.WebApp) {
+            throw new Error("Telegram WebApp not found.");
+          }
+          window.Telegram.WebApp.ready();
+          initData = window.Telegram.WebApp.initData;
+          initDataUnsafe = window.Telegram.WebApp.initDataUnsafe;
+
+          const response = await fetch("/auth/check_role", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, initDataUnsafe })
+          });
+          
+          const data = await response.json();
+          if (data.success && data.role === 'sadmin') {
+            showContent(); await fetchAdmins();
+          } else {
+            showError("You do not have permission to access this page.");
+          }
+        } catch (e) {
+          console.error("Authentication error:", e);
+          showError("Authentication failed. Please open from the Telegram app.");
+        }
+      };
+      
+      checkAuthAndLoad();
+    });
+  </script>
+</body>
+</html>
+

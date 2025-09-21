@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minimal Shop</title>
+  <script src="https://telegram.org/js/telegram-web-app.js?59"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .loader {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e5e7eb;
+      border-radius: 50%;
+      border-top-color: #1e40af;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-6">
+  <div class="text-center">
+    <div class="loader mb-4"></div>
+    <p class="text-brand font-semibold text-lg text-gray-700">Yuklanmoqda...</p>
+    <p class="text-xs text-gray-500 mt-2" id="statusMessage">Ruxsatlar tekshirilmoqda</p>
+  </div>
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        const initData = window.Telegram.WebApp.initData;
+        const initDataUnsafe = window.Telegram.WebApp.initDataUnsafe;
+
+        if (!initData || !initDataUnsafe) {
+          document.getElementById('statusMessage').textContent = 'Error: Missing Telegram data.';
+          return;
+        }
+
+        fetch("/auth/check_role", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData, initDataUnsafe })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const role = data.role;
+            const urlParams = new URLSearchParams();
+            urlParams.append('initData', initData);
+            urlParams.append('initDataUnsafe', JSON.stringify(initDataUnsafe));
+
+            switch(role) {
+              case 'sadmin':
+                window.location.href = `/admin/super?${urlParams.toString()}`;
+                break;
+              case 'admin':
+                window.location.href = `/admin?${urlParams.toString()}`;
+                break;
+              default:
+                window.location.href = `/menu?${urlParams.toString()}`;
+                break;
+            }
+          } else {
+            document.getElementById('statusMessage').textContent = data.message || 'Error checking role.';
+          }
+        })
+        .catch(error => {
+          console.error("Fetch error:", error);
+          document.getElementById('statusMessage').textContent = 'Network error. Please try again.';
+        });
+
+      } else {
+        document.getElementById('statusMessage').textContent = 'Telegram WebApp not found.';
+      }
+    });
+  </script>
+</body>
+</html>
