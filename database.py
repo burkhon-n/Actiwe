@@ -10,15 +10,18 @@ from config import DB_HOST, DB_NAME, DB_PORT, DB_PASSWORD, DB_USER, ENVIRONMENT
 logger = logging.getLogger(__name__)
 
 # Try different PostgreSQL drivers in order of preference
-def get_database_url():
-    """Get database URL with the best available PostgreSQL driver"""
+def get_database_url_and_args():
+    """Get database URL with the best available PostgreSQL driver and its connection args"""
     base_url = f"{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     
     # Try psycopg2 first (most compatible with SQLAlchemy)
     try:
         import psycopg2
         logger.info("Using psycopg2 driver")
-        return f"postgresql://{base_url}"
+        return f"postgresql://{base_url}", {
+            "connect_timeout": 10,
+            "options": "-c timezone=UTC"
+        }
     except ImportError:
         logger.debug("psycopg2 not available")
     
@@ -26,7 +29,10 @@ def get_database_url():
     try:
         import asyncpg
         logger.info("Using asyncpg driver")
-        return f"postgresql+asyncpg://{base_url}"
+        return f"postgresql+asyncpg://{base_url}", {
+            "command_timeout": 10,
+            "server_settings": {"timezone": "UTC"}
+        }
     except ImportError:
         logger.debug("asyncpg not available")
     
@@ -34,15 +40,18 @@ def get_database_url():
     try:
         import pg8000
         logger.info("Using pg8000 driver")
-        return f"postgresql+pg8000://{base_url}"
+        return f"postgresql+pg8000://{base_url}", {
+            # pg8000 doesn't support connect_timeout or options
+            # Use only basic parameters that pg8000 supports
+        }
     except ImportError:
         logger.debug("pg8000 not available")
     
     # Fallback to default (might fail but will show clear error)
     logger.warning("No PostgreSQL driver found, using default connection string")
-    return f"postgresql://{base_url}"
+    return f"postgresql://{base_url}", {}
 
-DATABASE_URL = get_database_url()
+DATABASE_URL, connect_args = get_database_url_and_args()
 logger.info(f"Using database URL: {DATABASE_URL.split('@')[0]}@***")
 
 # Production-ready engine configuration
@@ -52,10 +61,7 @@ engine_kwargs = {
     "pool_recycle": 3600,   # Recycle connections after 1 hour
     "pool_size": 10,        # Connection pool size
     "max_overflow": 20,     # Max overflow connections
-    "connect_args": {
-        "connect_timeout": 10,
-        "options": "-c timezone=UTC"
-    }
+    "connect_args": connect_args
 }
 
 # Use NullPool for deployment environments that handle their own pooling
@@ -76,9 +82,19 @@ except Exception as e:
 def set_postgresql_settings(dbapi_connection, connection_record):
     """Set database connection parameters."""
     try:
-        # PostgreSQL specific settings
-        with dbapi_connection.cursor() as cursor:
+        # Only set timezone if not already set via connection args
+        if "pg8000" in DATABASE_URL:
+            # pg8000 uses different cursor interface
+            cursor = dbapi_connection.cursor()
             cursor.execute("SET timezone TO 'UTC'")
+            cursor.close()
+        else:
+            # psycopg2 and asyncpg
+            with dbapi_connection.cursor() as cursor:
+                cursor.execute("SET timezone TO 'UTC'")
+                
+        # Commit the timezone setting
+        if hasattr(dbapi_connection, 'commit'):
             dbapi_connection.commit()
     except Exception as e:
         logger.warning(f"Failed to set PostgreSQL settings: {e}")
