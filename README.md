@@ -87,6 +87,33 @@ A modern e-commerce Telegram Web App built with FastAPI, PostgreSQL, and Telegra
    ./deploy.sh
    ```
 
+#### Option 3: cPanel Shared Hosting (Optimized)
+
+1. **Prepare deployment**
+   ```bash
+   # Fix file permissions
+   python3 fix_permissions.py
+   
+   # Run deployment script
+   chmod +x deploy_cpanel.sh
+   ./deploy_cpanel.sh
+   ```
+
+2. **Upload to cPanel**
+   - Upload all files to your domain's document root
+   - Ensure `passenger_wsgi.py` has 755 permissions
+   - Ensure `Passengerfile.json` has 644 permissions
+
+3. **Configure Python App in cPanel**
+   - App Directory: `/home/yourusername/repositories/Actiwe`
+   - App URL: `/` (or your subdomain)
+   - Python Version: 3.8+
+   - Application Startup File: `passenger_wsgi.py`
+
+4. **Set Environment Variables**
+   - Configure all required environment variables in cPanel Python app settings
+   - Restart the Python application
+
 ## 🗄️ Database Management
 
 ### Initial Setup
