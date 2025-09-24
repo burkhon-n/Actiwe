@@ -17,23 +17,26 @@ def get_database_url():
     # Try psycopg2 first (most compatible with SQLAlchemy)
     try:
         import psycopg2
+        logger.info("Using psycopg2 driver")
         return f"postgresql://{base_url}"
     except ImportError:
-        pass
+        logger.debug("psycopg2 not available")
     
     # Try asyncpg (async driver, good performance)
     try:
         import asyncpg
+        logger.info("Using asyncpg driver")
         return f"postgresql+asyncpg://{base_url}"
     except ImportError:
-        pass
+        logger.debug("asyncpg not available")
     
     # Try pg8000 (pure Python, most compatible)
     try:
         import pg8000
+        logger.info("Using pg8000 driver")
         return f"postgresql+pg8000://{base_url}"
     except ImportError:
-        pass
+        logger.debug("pg8000 not available")
     
     # Fallback to default (might fail but will show clear error)
     logger.warning("No PostgreSQL driver found, using default connection string")
