@@ -1,0 +1,40 @@
+# cPanel-specific requirements
+# Requirements for cPanel hosting with Passenger WSGI
+
+# Core web framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Database
+SQLAlchemy==2.0.23
+psycopg2-binary==2.9.8
+alembic==1.13.1
+
+# Configuration
+python-dotenv==1.0.0
+
+# Telegram
+pyTelegramBotAPI==4.14.0
+
+# Template engine
+Jinja2==3.1.2
+
+# Form handling
+python-multipart==0.0.6
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# HTTP requests
+requests==2.31.0
+httpx==0.25.2
+
+# Image processing
+Pillow==10.1.0
+
+# WSGI adapter for FastAPI
+asgiref==3.7.2
+
+# Additional dependencies for production
+starlette==0.27.0
