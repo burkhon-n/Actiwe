@@ -215,15 +215,8 @@ Thumbs.db
 *.p12
 
 # Alembic
-# Keep the versions folder but ignore temporary migration files
-alembic/versions/*_add_new_column.py
-alembic/versions/*_initial_migration.py
-alembic/versions/tmp_*.py
-
-# Temporary directories
-tmp/
-temp/
-.tmp/
+# Keep the versions folder but you might want to ignore specific migration files in some cases
+# alembic/versions/*.py
 
 # Node.js (if using any frontend tools)
 node_modules/
