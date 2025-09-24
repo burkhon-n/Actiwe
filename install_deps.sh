@@ -5,11 +5,14 @@ echo "🚀 Installing dependencies for cPanel hosting..."
 echo "Trying different PostgreSQL drivers until one works..."
 
 # Try requirements in order of preference
-if pip install -r requirements-cpanel.txt; then
-    echo "✅ Successfully installed with psycopg2-binary"
+if pip install -r requirements.txt; then
+    echo "✅ Successfully installed with asyncpg (main requirements)"
+    exit 0
+elif pip install -r requirements-cpanel.txt; then
+    echo "✅ Successfully installed with psycopg2-binary fallback"
     exit 0
 elif pip install -r requirements-asyncpg.txt; then
-    echo "✅ Successfully installed with asyncpg driver"
+    echo "✅ Successfully installed with asyncpg driver fallback"
     exit 0
 elif pip install -r requirements-pg8000.txt; then
     echo "✅ Successfully installed with pg8000 (pure Python) driver"
