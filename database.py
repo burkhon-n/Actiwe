@@ -9,8 +9,38 @@ from config import DB_HOST, DB_NAME, DB_PORT, DB_PASSWORD, DB_USER, ENVIRONMENT
 
 logger = logging.getLogger(__name__)
 
-# Use the credentials from config.py to create a connection string
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# Try different PostgreSQL drivers in order of preference
+def get_database_url():
+    """Get database URL with the best available PostgreSQL driver"""
+    base_url = f"{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    
+    # Try psycopg2 first (most compatible with SQLAlchemy)
+    try:
+        import psycopg2
+        return f"postgresql://{base_url}"
+    except ImportError:
+        pass
+    
+    # Try asyncpg (async driver, good performance)
+    try:
+        import asyncpg
+        return f"postgresql+asyncpg://{base_url}"
+    except ImportError:
+        pass
+    
+    # Try pg8000 (pure Python, most compatible)
+    try:
+        import pg8000
+        return f"postgresql+pg8000://{base_url}"
+    except ImportError:
+        pass
+    
+    # Fallback to default (might fail but will show clear error)
+    logger.warning("No PostgreSQL driver found, using default connection string")
+    return f"postgresql://{base_url}"
+
+DATABASE_URL = get_database_url()
+logger.info(f"Using database URL: {DATABASE_URL.split('@')[0]}@***")
 
 # Production-ready engine configuration
 engine_kwargs = {

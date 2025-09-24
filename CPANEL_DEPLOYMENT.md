@@ -37,11 +37,24 @@ This guide will help you deploy the Actiwe Telegram Shop application on cPanel s
 ### Step 3: Install Dependencies
 
 1. In cPanel Python interface, open **Terminal**
-2. Run the following commands:
+2. Try installing dependencies (try in order if one fails):
 
+**Option A (Recommended):**
 ```bash
 pip install -r requirements-cpanel.txt
 ```
+
+**Option B (If psycopg2 fails):**
+```bash
+pip install -r requirements-asyncpg.txt
+```
+
+**Option C (Pure Python fallback):**
+```bash
+pip install -r requirements-pg8000.txt
+```
+
+> **⚠️ PostgreSQL Driver Issues?** If you get `pg_config executable not found` errors, see `POSTGRESQL_DRIVER_GUIDE.md` for detailed solutions.
 
 ### Step 4: Configure Environment Variables
 

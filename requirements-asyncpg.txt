@@ -1,15 +1,16 @@
-# cPanel-specific requirements
-# Requirements for cPanel hosting with Passenger WSGI
+# Alternative requirements for hosting environments with psycopg2 issues
+# Use this if psycopg2-binary fails to install
 
 # Core web framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 
-# Database
+# Database - Alternative PostgreSQL drivers
 SQLAlchemy==2.0.23
-# Try psycopg2-binary first, fallback to psycopg2 if needed
-psycopg2-binary==2.9.8; platform_system != "Linux" or python_version >= "3.12"
-psycopg2==2.9.8; platform_system == "Linux" and python_version < "3.12"
+# Use asyncpg instead of psycopg2 for better compatibility
+asyncpg==0.29.0
+# OR use pg8000 as pure Python alternative
+# pg8000==1.30.3
 alembic==1.13.1
 
 # Configuration
