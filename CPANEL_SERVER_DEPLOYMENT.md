@@ -106,17 +106,20 @@ chmod 644 main.py database.py config.py
 ### Issue 3: Import Errors
 ```
 ImportError: No module named 'a2wsgi'
+ImportError: No module named 'aiohttp'
 ```
 
 **Solution:**
 ```bash
 # Install missing dependencies
-pip install a2wsgi==1.10.0
+pip install a2wsgi==1.10.0 aiohttp==3.9.1
 pip install fastapi sqlalchemy psycopg2-binary
 
 # Or install all at once
 pip install -r requirements.txt
 ```
+
+**Note:** `aiohttp` is required for AsyncTeleBot (async Telegram bot operations)
 
 ### Issue 4: Database Connection Errors
 ```
