@@ -1,6 +1,6 @@
 # models/Item.py
 
-from sqlalchemy import Column, Integer, String, BigInteger
+from sqlalchemy import Column, Integer, String, BigInteger, Boolean
 from sqlalchemy.orm import Session
 from database import Base
 import random
@@ -14,6 +14,7 @@ class Item(Base):
     price = Column(Integer, nullable=False)
     image = Column(String(255), nullable=True)
     sizes = Column(String, nullable=False) # "45, 46, 47, 48, ..."
+    gender_neutral = Column(Boolean, default=False)
     description = Column(String(1000), nullable=True)
     category_id = Column(Integer, nullable=True)
     created_at = Column(Integer, nullable=False, default=lambda: int(time.time()))
@@ -23,18 +24,19 @@ class Item(Base):
 
     # Note: __init__ should be removed if you want SQLAlchemy to handle it automatically,
     # but for your example, it's fine.
-    def __init__(self, title: str, price: int, image: str, sizes:str, description: str, category_id: int, created_by: int, updated_by: int):
+    def __init__(self, title: str, price: int, image: str, sizes:str, description: str, category_id: int, created_by: int, updated_by: int, gender_neutral: bool = False):
         self.title = title
         self.price = price
         self.image = image
         self.sizes = sizes
+        self.gender_neutral = gender_neutral
         self.description = description
         self.category_id = category_id
         self.created_by = created_by
         self.updated_by = updated_by
 
     @staticmethod
-    def create(session: Session, title: str, price: int, image: str, sizes:str, description: str, category_id: int, created_by: int, updated_by: int) -> "Item":
+    def create(session: Session, title: str, price: int, image: str, sizes:str, description: str, category_id: int, created_by: int, updated_by: int, gender_neutral: bool = False) -> "Item":
         item = Item(
             title=title,
             price=price,
@@ -43,7 +45,8 @@ class Item(Base):
             description=description,
             category_id=category_id,
             created_by=created_by,
-            updated_by=updated_by
+            updated_by=updated_by,
+            gender_neutral=gender_neutral
         )
         session.add(item)
         return item

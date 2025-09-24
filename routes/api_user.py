@@ -25,7 +25,12 @@ async def update_cart(request: Request, db: Session = Depends(get_db)):
 
     # Fetch existing cart from DB to compare
     existing_cart_db = db.query(CartItem).filter_by(user_id=user_id).all()
-    existing_cart_map = {f"{item.item_id}-{item.size}": item for item in existing_cart_db}
+    existing_cart_map = {}
+    for item in existing_cart_db:
+        if item.gender:
+            existing_cart_map[f"{item.item_id}-{item.size}-{item.gender}"] = item
+        else:
+            existing_cart_map[f"{item.item_id}-{item.size}"] = item
 
     client_keys = set(cart_from_client.keys())
     db_keys = set(existing_cart_map.keys())
@@ -38,8 +43,11 @@ async def update_cart(request: Request, db: Session = Depends(get_db)):
 
     # 2. Add or update items from the client's cart
     for key, quantity in cart_from_client.items():
-        item_id_str, size = key.split('-')
-        item_id = int(item_id_str)
+        # Parse the key to extract item_id, size, and optional gender
+        key_parts = key.split('-')
+        item_id = int(key_parts[0])
+        size = key_parts[1]
+        gender = key_parts[2] if len(key_parts) > 2 else None
         
         if key in existing_cart_map:
             # Update existing item if quantity differs
@@ -47,7 +55,7 @@ async def update_cart(request: Request, db: Session = Depends(get_db)):
                 existing_cart_map[key].quantity = quantity
         else:
             # Add new item
-            new_cart_item = CartItem(user_id=user_id, item_id=item_id, size=size, quantity=quantity)
+            new_cart_item = CartItem(user_id=user_id, item_id=item_id, size=size, quantity=quantity, gender=gender)
             db.add(new_cart_item)
 
     db.commit()
@@ -78,9 +86,25 @@ async def place_order(request: Request, db: Session = Depends(get_db)):
     i=0
     for key, value in cart.items():
         i+=1
-        item_id, size = key.split('-')
-        item = Item.get(db, int(item_id))
-        text += f"\n{i}. {item.title} ({size}) - {value} dona - {format_price(item.price * value)} so'm"
+        key_parts = key.split('-')
+        item_id = int(key_parts[0])
+        size = key_parts[1]
+        gender = key_parts[2] if len(key_parts) > 2 else None
+        
+        item = Item.get(db, item_id)
+        
+        # Format the item display based on whether it has size and gender
+        item_details = []
+        if size != 'N/A':
+            item_details.append(f"O'lcham: {size}")
+        if gender:
+            gender_text = "Erkak" if gender == "male" else "Ayol" if gender == "female" else ""
+            if gender_text:
+                item_details.append(gender_text)
+        
+        details_str = f" ({', '.join(item_details)})" if item_details else ""
+        text += f"\n{i}. {item.title}{details_str} - {value} dona - {format_price(item.price * value)} so'm"
+    
     text += f"\n\n<b>Jami: {format_price(sum(Item.get(db, int(k.split('-')[0])).price * v for k, v in cart.items()))} so'm</b>"
 
     await bot.send_message(

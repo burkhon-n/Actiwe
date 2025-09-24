@@ -63,12 +63,18 @@ async def auth(request: Request, db: Session = Depends(get_db)):
             "price": item.price,
             "image": item.image,
             "sizes": item.sizes,
+            "gender_neutral": item.gender_neutral,
             "description": item.description
         }
 
-    # Get user's cart items
+    # Get user's cart items - now including gender information
     cart_items_db = CartItem.get_by_user(db, user_id)
-    cart_items = {f"{ci.item_id}-{ci.size}": ci.quantity for ci in cart_items_db}
+    cart_items = {}
+    for ci in cart_items_db:
+        if ci.gender:
+            cart_items[f"{ci.item_id}-{ci.size}-{ci.gender}"] = ci.quantity
+        else:
+            cart_items[f"{ci.item_id}-{ci.size}"] = ci.quantity
     
     return JSONResponse(content={
         'success': True, 

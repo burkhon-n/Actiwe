@@ -9,22 +9,25 @@ class CartItem(Base):
     user_id = Column(BigInteger, nullable=False)
     item_id = Column(Integer, nullable=False)
     size = Column(String, nullable=False)
+    gender = Column(String, nullable=True)  # 'male', 'female' or None for gender_neutral items
     quantity = Column(Integer, nullable=False)
     created_at = Column(Integer, nullable=False, default=lambda: int(time.time()))
 
-    def __init__(self, user_id: int, item_id: int, size: str, quantity: int):
+    def __init__(self, user_id: int, item_id: int, size: str, quantity: int, gender: str = None):
         self.user_id = user_id
         self.item_id = item_id
         self.size = size
+        self.gender = gender
         self.quantity = quantity
 
     @staticmethod
-    def create(session: Session, user_id: int, item_id: int, size: str, quantity: int) -> "CartItem":
+    def create(session: Session, user_id: int, item_id: int, size: str, quantity: int, gender: str = None) -> "CartItem":
         cart_item = CartItem(
             user_id=user_id,
             item_id=item_id,
             size=size,
-            quantity=quantity
+            quantity=quantity,
+            gender=gender
         )
         session.add(cart_item)
         return cart_item

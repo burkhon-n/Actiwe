@@ -1,8 +1,42 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-psycopg2-binary
-python-dotenv
-pyTelegramBotAPI
-jinja2
-python-multipart
+# Core dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.8
+python-dotenv==1.0.0
+pyTelegramBotAPI==4.14.0
+jinja2==3.1.2
+python-multipart==0.0.6
+
+# Database migrations
+alembic==1.13.1
+
+# Production dependencies
+gunicorn==21.2.0
+pydantic[email]==2.5.0
+pydantic-settings==2.1.0
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Monitoring and logging
+structlog==23.2.0
+python-json-logger==2.0.7
+
+# HTTP client
+httpx==0.25.2
+requests==2.31.0
+
+# Image processing (for future features)
+Pillow==10.1.0
+
+# Data validation
+email-validator==2.1.0
+
+# Development dependencies (optional)
+# pytest==7.4.3
+# pytest-asyncio==0.21.1
+# black==23.11.0
+# isort==5.12.0
+# flake8==6.1.0

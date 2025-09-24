@@ -271,11 +271,15 @@
             this.cart = {};
             this.products = {};
             this.selectedSizes = {};
+            this.selectedGenders = {};
             this.selectedQuantities = {};
         }
 
-        // Get cart key for item and size combination
-        getCartKey(itemId, size) {
+        // Get cart key for item, size, and gender combination
+        getCartKey(itemId, size, gender) {
+            if (gender) {
+                return `${itemId}-${size}-${gender}`;
+            }
             return `${itemId}-${size}`;
         }
 
@@ -295,31 +299,62 @@
         // Get current size for item
         getCurrentSize(itemId) {
             if (!this.selectedSizes[itemId] && this.products[itemId]) {
-                const sizes = this.products[itemId].sizes.split(',').map(s => s.trim());
-                this.selectedSizes[itemId] = sizes[0] || '';
+                const product = this.products[itemId];
+                if (product.sizes === '0') {
+                    this.selectedSizes[itemId] = 'N/A';
+                } else {
+                    const sizes = product.sizes.split(',').map(s => s.trim());
+                    this.selectedSizes[itemId] = sizes[0] || '';
+                }
             }
             return this.selectedSizes[itemId];
+        }
+
+        // Get current gender for item
+        getCurrentGender(itemId) {
+            if (!this.selectedGenders[itemId] && this.products[itemId]) {
+                const product = this.products[itemId];
+                if (product.gender_neutral) {
+                    this.selectedGenders[itemId] = null;
+                } else {
+                    this.selectedGenders[itemId] = 'male'; // default to male
+                }
+            }
+            return this.selectedGenders[itemId];
         }
 
         // Set size for item
         setSize(itemId, size) {
             this.selectedSizes[itemId] = size;
-            // Sync quantity with cart for the new size
-            this.syncQuantityWithCart(itemId, size);
+            // Sync quantity with cart for the new size and current gender
+            const gender = this.getCurrentGender(itemId);
+            this.syncQuantityWithCart(itemId, size, gender);
             this.updateAllUI(itemId);
         }
 
-        // Get cart quantity for specific item and size
-        getCartQuantity(itemId, size) {
-            const key = this.getCartKey(itemId, size || this.getCurrentSize(itemId));
+        // Set gender for item
+        setGender(itemId, gender) {
+            this.selectedGenders[itemId] = gender;
+            // Sync quantity with cart for the current size and new gender
+            const size = this.getCurrentSize(itemId);
+            this.syncQuantityWithCart(itemId, size, gender);
+            this.updateAllUI(itemId);
+        }
+
+        // Get cart quantity for specific item, size, and gender
+        getCartQuantity(itemId, size, gender) {
+            const currentSize = size || this.getCurrentSize(itemId);
+            const currentGender = gender !== undefined ? gender : this.getCurrentGender(itemId);
+            const key = this.getCartKey(itemId, currentSize, currentGender);
             return this.cart[key] || 0;
         }
 
         // Add item to cart
         addToCart(itemId) {
             const size = this.getCurrentSize(itemId);
+            const gender = this.getCurrentGender(itemId);
             const quantity = this.getCurrentQuantity(itemId);
-            const key = this.getCartKey(itemId, size);
+            const key = this.getCartKey(itemId, size, gender);
             
             this.cart[key] = (this.cart[key] || 0) + quantity;
             showAlert("Mahsulot savatga qo'shildi!"); // MODIFIED: Call alert
@@ -330,8 +365,9 @@
         // Update item in cart
         updateCartItem(itemId) {
             const size = this.getCurrentSize(itemId);
+            const gender = this.getCurrentGender(itemId);
             const quantity = this.getCurrentQuantity(itemId);
-            const key = this.getCartKey(itemId, size);
+            const key = this.getCartKey(itemId, size, gender);
             
             this.cart[key] = quantity;
             showAlert("Savat yangilandi!"); // MODIFIED: Call alert
@@ -342,7 +378,8 @@
         // Remove item from cart
         removeFromCart(itemId) {
             const size = this.getCurrentSize(itemId);
-            const key = this.getCartKey(itemId, size);
+            const gender = this.getCurrentGender(itemId);
+            const key = this.getCartKey(itemId, size, gender);
             
             delete this.cart[key];
             showAlert("Mahsulot o'chirildi", 'info'); // MODIFIED: Call alert
@@ -351,14 +388,16 @@
         }
 
         // Check if item is in cart
-        isInCart(itemId, size) {
-            const key = this.getCartKey(itemId, size || this.getCurrentSize(itemId));
+        isInCart(itemId, size, gender) {
+            const currentSize = size || this.getCurrentSize(itemId);
+            const currentGender = gender !== undefined ? gender : this.getCurrentGender(itemId);
+            const key = this.getCartKey(itemId, currentSize, currentGender);
             return this.cart[key] > 0;
         }
 
-        // Sync quantity with cart when switching between items or sizes
-        syncQuantityWithCart(itemId, size) {
-            const cartQuantity = this.getCartQuantity(itemId, size);
+        // Sync quantity with cart when switching between items, sizes, or genders
+        syncQuantityWithCart(itemId, size, gender) {
+            const cartQuantity = this.getCartQuantity(itemId, size, gender);
             if (cartQuantity > 0) {
                 this.selectedQuantities[itemId] = cartQuantity;
             } else if (!this.selectedQuantities[itemId]) {
@@ -386,7 +425,8 @@
         updateAllUI(itemId) {
             // First sync quantity with cart if item is in cart
             const size = this.getCurrentSize(itemId);
-            this.syncQuantityWithCart(itemId, size);
+            const gender = this.getCurrentGender(itemId);
+            this.syncQuantityWithCart(itemId, size, gender);
             
             this.updateCardUI(itemId);
             this.updateModalUI(itemId);
@@ -397,16 +437,26 @@
         updateCardUI(itemId) {
             const quantity = this.getCurrentQuantity(itemId);
             const size = this.getCurrentSize(itemId);
+            const gender = this.getCurrentGender(itemId);
 
             // Update counter
             const cardCounter = document.getElementById(`counter-${itemId}`);
             if (cardCounter) cardCounter.textContent = quantity;
 
-            // Update size button
+            // Update size button (only if it exists for items with sizes)
             const cardSizeBtn = document.getElementById(`size-button-${itemId}`);
             if (cardSizeBtn) {
                 const sizeSpan = cardSizeBtn.querySelector('span');
                 if (sizeSpan) sizeSpan.textContent = size;
+            }
+
+            // Update gender button (only if it exists for items that aren't gender neutral)
+            const cardGenderBtn = document.getElementById(`gender-button-${itemId}`);
+            if (cardGenderBtn && gender) {
+                const genderSpan = cardGenderBtn.querySelector('span');
+                if (genderSpan) {
+                    genderSpan.textContent = gender === 'male' ? 'Erkak' : 'Ayol';
+                }
             }
         }
 
@@ -417,16 +467,26 @@
 
             const quantity = this.getCurrentQuantity(itemId);
             const size = this.getCurrentSize(itemId);
+            const gender = this.getCurrentGender(itemId);
 
             // Update modal counter
             const previewCounter = document.getElementById('preview-counter');
             if (previewCounter) previewCounter.textContent = quantity;
 
-            // Update modal size button
+            // Update modal size button (only if it exists for items with sizes)
             const previewSizeBtn = document.getElementById('preview-size-button');
             if (previewSizeBtn) {
                 const sizeSpan = previewSizeBtn.querySelector('span');
                 if (sizeSpan) sizeSpan.textContent = size;
+            }
+
+            // Update modal gender button (only if it exists for items that aren't gender neutral)
+            const previewGenderBtn = document.getElementById('preview-gender-button');
+            if (previewGenderBtn && gender) {
+                const genderSpan = previewGenderBtn.querySelector('span');
+                if (genderSpan) {
+                    genderSpan.textContent = gender === 'male' ? 'Erkak' : 'Ayol';
+                }
             }
 
             // Update modal actions
@@ -439,11 +499,12 @@
         // Generate action buttons HTML
         generateActionButtons(itemId) {
             const size = this.getCurrentSize(itemId);
-            const isInCart = this.isInCart(itemId, size);
+            const gender = this.getCurrentGender(itemId);
+            const isInCart = this.isInCart(itemId, size, gender);
 
             if (isInCart) {
                 // Ensure quantity matches what's in cart
-                const cartQty = this.getCartQuantity(itemId, size);
+                const cartQty = this.getCartQuantity(itemId, size, gender);
                 this.selectedQuantities[itemId] = cartQty;
                 
                 return `
@@ -493,12 +554,26 @@
             for (const key in this.cart) {
                 if (this.cart[key] <= 0) continue;
                 
-                const [itemId, size] = key.split('-');
+                const keyParts = key.split('-');
+                const itemId = keyParts[0];
+                const size = keyParts[1];
+                const gender = keyParts[2];
                 const product = this.products[itemId];
                 
                 if (product) {
                     const itemTotal = parseFloat(product.price) * this.cart[key];
                     totalPrice += itemTotal;
+                    
+                    // Build details array for display
+                    let details = [];
+                    if (size !== 'N/A') {
+                        details.push(`O'lcham: ${size}`);
+                    }
+                    if (gender) {
+                        const genderText = gender === 'male' ? 'Erkak' : 'Ayol';
+                        details.push(genderText);
+                    }
+                    const detailsStr = details.length > 0 ? `<p class="text-sm text-gray-500">${details.join(', ')}</p>` : '';
                     
                     cartItemsEl.innerHTML += `
                         <div class="bg-white rounded-xl p-4 shadow-sm">
@@ -506,7 +581,7 @@
                                 <img src="${product.image}" alt="${product.title}" class="w-16 h-16 object-cover rounded-lg">
                                 <div class="flex-1">
                                     <p class="font-bold text-gray-800">${product.title}</p>
-                                    <p class="text-sm text-gray-500">O'lcham: ${size}</p>
+                                    ${detailsStr}
                                     <p class="text-brand font-bold">${this.formatPrice(itemTotal)}</p>
                                 </div>
                                 <div class="flex items-center gap-2">
@@ -595,10 +670,15 @@
         shopState.setSize(itemId, size);
     };
 
+    window.handleGenderSelection = function(itemId, gender) {
+        shopState.setGender(itemId, gender);
+    };
+
     window.increaseQuantity = function(itemId) {
         const currentQty = shopState.getCurrentQuantity(itemId);
         const size = shopState.getCurrentSize(itemId);
-        const isInCart = shopState.isInCart(itemId, size);
+        const gender = shopState.getCurrentGender(itemId);
+        const isInCart = shopState.isInCart(itemId, size, gender);
         
         // If item is in cart, allow increasing beyond cart quantity for updates
         if (isInCart) {
@@ -613,7 +693,8 @@
     window.decreaseQuantity = function(itemId) {
         const currentQty = shopState.getCurrentQuantity(itemId);
         const size = shopState.getCurrentSize(itemId);
-        const isInCart = shopState.isInCart(itemId, size);
+        const gender = shopState.getCurrentGender(itemId);
+        const isInCart = shopState.isInCart(itemId, size, gender);
         
         if (currentQty > 1) {
             shopState.setQuantity(itemId, currentQty - 1);
@@ -633,8 +714,13 @@
         }
         
         // Update UI states for the affected item
-        const [itemId, size] = cartKey.split('-');
-        if (shopState.selectedSizes[itemId] === size) {
+        const keyParts = cartKey.split('-');
+        const itemId = keyParts[0];
+        const size = keyParts[1];
+        const gender = keyParts[2];
+        
+        if (shopState.selectedSizes[itemId] === size && 
+            shopState.selectedGenders[itemId] === gender) {
             shopState.selectedQuantities[itemId] = newQuantity;
             shopState.updateAllUI(itemId);
         }
@@ -647,8 +733,13 @@
         showAlert("Mahsulot o'chirildi", 'info'); // MODIFIED: Call alert
         
         // Update UI states for the affected item
-        const [itemId, size] = cartKey.split('-');
-        if (shopState.selectedSizes[itemId] === size) {
+        const keyParts = cartKey.split('-');
+        const itemId = keyParts[0];
+        const size = keyParts[1];
+        const gender = keyParts[2];
+        
+        if (shopState.selectedSizes[itemId] === size && 
+            shopState.selectedGenders[itemId] === gender) {
             shopState.selectedQuantities[itemId] = 1;
             shopState.updateAllUI(itemId);
         }
@@ -659,9 +750,10 @@
     // Helper function to update button state
     function updateButtonState(itemId) {
         const size = shopState.getCurrentSize(itemId);
+        const gender = shopState.getCurrentGender(itemId);
         const currentQty = shopState.getCurrentQuantity(itemId);
-        const cartQty = shopState.getCartQuantity(itemId, size);
-        const isInCart = shopState.isInCart(itemId, size);
+        const cartQty = shopState.getCartQuantity(itemId, size, gender);
+        const isInCart = shopState.isInCart(itemId, size, gender);
         
         if (isInCart) {
             // Find update buttons and enable/disable them
@@ -692,22 +784,19 @@
         previewDescription.textContent = item.description || 'Mahsulot tavsifi mavjud emas.';
 
         // Generate controls for the modal
-        const sizes = item.sizes.split(',').map(s => s.trim());
         const currentSize = shopState.getCurrentSize(itemId);
+        const currentGender = shopState.getCurrentGender(itemId);
         const currentQuantity = shopState.getCurrentQuantity(itemId);
         
-        let sizeMenuItemsHTML = '';
-        sizes.forEach(size => {
-            sizeMenuItemsHTML += `<a href="#" onclick="handleSizeSelection('${item.id}', '${size}'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${size}</a>`;
-        });
-        
-        previewControls.innerHTML = `
-            <div class="flex items-center justify-between w-full">
-                <div class="flex items-center gap-2">
-                    <button onclick="decreaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold hover:bg-gray-300">-</button>
-                    <span id="preview-counter" class="font-bold text-lg text-brand min-w-[24px] text-center">${currentQuantity}</span>
-                    <button onclick="increaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold hover:bg-gray-300">+</button>
-                </div>
+        let sizeControlsHTML = '';
+        if (item.sizes !== '0') {
+            const sizes = item.sizes.split(',').map(s => s.trim());
+            let sizeMenuItemsHTML = '';
+            sizes.forEach(size => {
+                sizeMenuItemsHTML += `<a href="#" onclick="handleSizeSelection('${item.id}', '${size}'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${size}</a>`;
+            });
+            
+            sizeControlsHTML = `
                 <div class="relative">
                     <el-dropdown class="inline-block">
                         <button id="preview-size-button" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
@@ -718,7 +807,40 @@
                             <div class="py-1">${sizeMenuItemsHTML}</div>
                         </el-menu>
                     </el-dropdown>
+                </div>`;
+        }
+
+        let genderControlsHTML = '';
+        if (!item.gender_neutral) {
+            const genderText = currentGender === 'male' ? 'Erkak' : 'Ayol';
+            genderControlsHTML = `
+                <div class="relative">
+                    <el-dropdown class="inline-block">
+                        <button id="preview-gender-button" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
+                            <span class="truncate">${genderText}</span>
+                            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
+                        </button>
+                        <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+                            <div class="py-1">
+                                <a href="#" onclick="handleGenderSelection('${item.id}', 'male'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Erkak</a>
+                                <a href="#" onclick="handleGenderSelection('${item.id}', 'female'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ayol</a>
+                            </div>
+                        </el-menu>
+                    </el-dropdown>
+                </div>`;
+        }
+        
+        const hasControls = item.sizes !== '0' || !item.gender_neutral;
+        const controlsHTML = [sizeControlsHTML, genderControlsHTML].filter(Boolean).join('');
+        
+        previewControls.innerHTML = `
+            <div class="flex items-center ${hasControls ? 'justify-between' : 'justify-center'} w-full">
+                <div class="flex items-center gap-2">
+                    <button onclick="decreaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold hover:bg-gray-300">-</button>
+                    <span id="preview-counter" class="font-bold text-lg text-brand min-w-[24px] text-center">${currentQuantity}</span>
+                    <button onclick="increaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold hover:bg-gray-300">+</button>
                 </div>
+                ${hasControls ? `<div class="flex items-center gap-2">${controlsHTML}</div>` : ''}
             </div>
             <div id="preview-action-buttons">${shopState.generateActionButtons(itemId)}</div>
         `;
@@ -775,28 +897,20 @@
 
         let productHTML = '';
         for (const item of Object.values(shopState.products)) {
-            const sizes = item.sizes.split(',').map(s => s.trim());
-            const defaultSize = sizes[0] || 'N/A';
+            let sizeControlsHTML = '';
+            let genderControlsHTML = '';
+            let defaultSize = '';
             
-            let sizeMenuItemsHTML = '';
-            sizes.forEach(size => {
-                sizeMenuItemsHTML += `<a href="#" onclick="handleSizeSelection('${item.id}', '${size}'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${size}</a>`;
-            });
+            if (item.sizes !== '0') {
+                const sizes = item.sizes.split(',').map(s => s.trim());
+                defaultSize = sizes[0] || 'N/A';
+                
+                let sizeMenuItemsHTML = '';
+                sizes.forEach(size => {
+                    sizeMenuItemsHTML += `<a href="#" onclick="handleSizeSelection('${item.id}', '${size}'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${size}</a>`;
+                });
 
-            productHTML += `
-            <div class="product-card shadow-lg rounded-3xl overflow-hidden flex flex-col animate-slide-up">
-              <img src="${item.image}" alt="${item.title}" loading="lazy" class="w-full h-56 object-cover cursor-pointer hover:scale-105 transition-transform duration-300" onclick="openImagePreview('${item.id}')">
-              <div class="flex flex-col p-6 flex-grow">
-                <div class="flex justify-between items-start w-full mb-4">
-                  <p class="font-bold text-xl text-gray-800 line-clamp-2">${item.title}</p>
-                  <p class="text-brand font-bold text-lg whitespace-nowrap ml-2">${shopState.formatPrice(item.price)}</p>
-                </div>
-                <div class="flex items-center justify-between w-full mb-4">
-                  <div class="flex items-center gap-2">
-                    <button onclick="decreaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold">-</button>
-                    <span id="counter-${item.id}" class="font-bold text-lg text-brand min-w-[24px] text-center">1</span>
-                    <button onclick="increaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold">+</button>
-                  </div>
+                sizeControlsHTML = `
                   <div class="relative">
                     <el-dropdown class="inline-block">
                         <button id="size-button-${item.id}" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 transition-colors duration-200">
@@ -807,7 +921,44 @@
                             <div class="py-1">${sizeMenuItemsHTML}</div>
                         </el-menu>
                     </el-dropdown>
+                  </div>`;
+            } else {
+                defaultSize = 'N/A';
+            }
+
+            if (!item.gender_neutral) {
+                genderControlsHTML = `
+                  <div class="relative">
+                    <el-dropdown class="inline-block">
+                        <button id="gender-button-${item.id}" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 transition-colors duration-200">
+                            <span class="truncate">Erkak</span>
+                            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
+                        </button>
+                        <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+                            <div class="py-1">
+                                <a href="#" onclick="handleGenderSelection('${item.id}', 'male'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Erkak</a>
+                                <a href="#" onclick="handleGenderSelection('${item.id}', 'female'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ayol</a>
+                            </div>
+                        </el-menu>
+                    </el-dropdown>
+                  </div>`;
+            }
+
+            productHTML += `
+            <div class="product-card shadow-lg rounded-3xl overflow-hidden flex flex-col animate-slide-up">
+              <img src="${item.image}" alt="${item.title}" loading="lazy" class="w-full h-56 object-cover cursor-pointer hover:scale-105 transition-transform duration-300" onclick="openImagePreview('${item.id}')">
+              <div class="flex flex-col p-6 flex-grow">
+                <div class="flex justify-between items-start w-full mb-4">
+                  <p class="font-bold text-xl text-gray-800 line-clamp-2">${item.title}</p>
+                  <p class="text-brand font-bold text-lg whitespace-nowrap ml-2">${shopState.formatPrice(item.price)}</p>
+                </div>
+                <div class="flex items-center ${item.sizes === '0' && item.gender_neutral ? 'justify-center' : 'justify-between'} w-full mb-4">
+                  <div class="flex items-center gap-2">
+                    <button onclick="decreaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold">-</button>
+                    <span id="counter-${item.id}" class="font-bold text-lg text-brand min-w-[24px] text-center">1</span>
+                    <button onclick="increaseQuantity('${item.id}')" class="counter-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold">+</button>
                   </div>
+                  ${(sizeControlsHTML || genderControlsHTML) ? `<div class="flex items-center gap-2">${sizeControlsHTML}${genderControlsHTML}</div>` : ''}
                 </div>
                 <div id="action-${item.id}" class="w-full mt-auto"></div>
               </div>
@@ -817,14 +968,24 @@
 
         // Initialize default states and render actions for all products
         for (const item of Object.values(shopState.products)) {
-            const sizes = item.sizes.split(',').map(s => s.trim());
-            
             // Initialize default states if not already set
             if (!shopState.selectedQuantities[item.id]) {
                 shopState.selectedQuantities[item.id] = 1;
             }
             if (!shopState.selectedSizes[item.id]) {
-                shopState.selectedSizes[item.id] = sizes[0] || '';
+                if (item.sizes === '0') {
+                    shopState.selectedSizes[item.id] = 'N/A';
+                } else {
+                    const sizes = item.sizes.split(',').map(s => s.trim());
+                    shopState.selectedSizes[item.id] = sizes[0] || '';
+                }
+            }
+            if (!shopState.selectedGenders[item.id]) {
+                if (item.gender_neutral) {
+                    shopState.selectedGenders[item.id] = null;
+                } else {
+                    shopState.selectedGenders[item.id] = 'male'; // default to male
+                }
             }
             
             // Render initial actions and update UI
@@ -875,7 +1036,8 @@
                 
                 // Initialize selected quantities based on cart
                 for (const key in shopState.cart) {
-                    const [itemId] = key.split('-');
+                    const keyParts = key.split('-');
+                    const itemId = keyParts[0];
                     if (shopState.cart[key] > 0) {
                         shopState.selectedQuantities[itemId] = shopState.cart[key];
                     }

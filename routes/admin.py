@@ -164,6 +164,7 @@ async def create_item(
     title: str = Form(...),
     price: int = Form(...),
     sizes: str = Form(...),
+    gender_neutral: bool = Form(False),
     description: str = Form(None),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -190,7 +191,8 @@ async def create_item(
             description=description,
             category_id=1,
             created_by=1, # This should be replaced with the actual user ID
-            updated_by=1  # This should be replaced with the actual user ID
+            updated_by=1,  # This should be replaced with the actual user ID
+            gender_neutral=gender_neutral
         )
         db.commit()
         return JSONResponse(
@@ -210,6 +212,7 @@ async def edit_item(
     title: str = Form(...),
     price: int = Form(...),
     sizes: str = Form(...),
+    gender_neutral: bool = Form(False),
     description: str = Form(None),
     image: UploadFile = File(None),
     db: Session = Depends(get_db),
@@ -247,6 +250,7 @@ async def edit_item(
             image=image_url,
             sizes=sizes,
             description=description,
+            gender_neutral=gender_neutral,
         )
         db.commit()
         return JSONResponse(
