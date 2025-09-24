@@ -93,7 +93,25 @@ MAX_FILE_SIZE_MB=5
 ALLOWED_IMAGE_EXTENSIONS=jpg,jpeg,png,webp
 ```
 
-### Step 5: Database Setup
+### Step 5: WSGI Configuration
+
+The application uses `a2wsgi` to convert the FastAPI (ASGI) application to WSGI for Passenger compatibility:
+
+**passenger_wsgi.py contents:**
+```python
+from a2wsgi import ASGIMiddleware
+from main import app
+
+application = ASGIMiddleware(app)
+```
+
+This configuration:
+- ✅ Converts ASGI (FastAPI) to WSGI (Passenger)
+- ✅ Maintains full FastAPI functionality  
+- ✅ Provides optimal performance for shared hosting
+- ✅ Zero configuration required
+
+### Step 6: Database Setup
 
 1. Create PostgreSQL database in cPanel
 2. Update database credentials in `.env`
@@ -102,13 +120,6 @@ ALLOWED_IMAGE_EXTENSIONS=jpg,jpeg,png,webp
 ```bash
 python -m alembic upgrade head
 ```
-
-### Alternative: Standard WSGI Adapter
-
-If Passenger WSGI doesn't work, you can also try the standard `wsgi.py` file:
-
-- **Application startup file**: `wsgi.py`
-- **Application Entry Point**: `application`
 
 ## Database Configuration
 

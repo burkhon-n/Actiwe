@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.exception_handlers import http_exception_handler
-from database import engine, Base, SessionLocal, get_db, test_database_connection, DatabaseSessionManager
+from database import engine, Base, SessionLocal, get_db, test_database_connection, DatabaseSessionManager, init_database
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from models import Admin, ShopTheme
@@ -111,33 +111,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             raise
 
 # --- Database Initialization ---
-async def init_database():
-    """Initialize database tables and default data."""
-    try:
-        # Test database connectivity
-        if not test_database_connection():
-            raise Exception("Database connection test failed")
-        
-        # Create tables
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created or already exist.")
-        
-        # Initialize default data
-        with DatabaseSessionManager() as db:
-            try:
-                # Check if default shop theme exists
-                if not db.query(ShopTheme).first():
-                    default_theme = ShopTheme(name="Actiwe", logo="/static/logo.png")
-                    db.add(default_theme)
-                    logger.info("Default shop theme created successfully.")
-                    
-            except SQLAlchemyError as e:
-                logger.error(f"Error creating default shop theme: {e}")
-                raise
-                
-    except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
-        raise
+# (init_database function moved to database.py)
 
 # --- FastAPI App Initialization ---
 app = FastAPI(

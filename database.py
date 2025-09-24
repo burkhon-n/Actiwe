@@ -160,3 +160,34 @@ def test_database_connection() -> bool:
     except Exception as e:
         logger.error(f"Database connection test failed: {e}")
         return False
+
+async def init_database():
+    """Initialize database tables and default data."""
+    try:
+        # Test database connectivity
+        if not test_database_connection():
+            raise Exception("Database connection test failed")
+        
+        # Create tables
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created or already exist.")
+        
+        # Initialize default data
+        with DatabaseSessionManager() as db:
+            try:
+                # Import here to avoid circular imports
+                from models import ShopTheme
+                
+                # Check if default shop theme exists
+                if not db.query(ShopTheme).first():
+                    default_theme = ShopTheme(name="Actiwe", logo="/static/logo.png")
+                    db.add(default_theme)
+                    logger.info("Default shop theme created successfully.")
+                    
+            except Exception as e:
+                logger.error(f"Error creating default shop theme: {e}")
+                raise
+                
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        raise

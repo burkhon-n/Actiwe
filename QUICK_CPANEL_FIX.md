@@ -21,8 +21,9 @@ pip install -r requirements.txt
 - ❌ `passlib[bcrypt]` → ✅ Removed (not used)
 - ❌ `httpx`, `email-validator`, etc. → ✅ Removed unused deps
 
-**Essential dependencies only (10 total):**
-- FastAPI, Uvicorn, SQLAlchemy, AsyncPG
+**Essential dependencies only (11 total):**
+- FastAPI, Uvicorn, SQLAlchemy, pg8000 (PostgreSQL driver)
+- a2wsgi (ASGI to WSGI adapter for cPanel)
 - Telegram Bot API, Jinja2, Alembic
 - Python-dotenv, Python-multipart, Requests
 
@@ -45,10 +46,10 @@ pip install pg8000==1.30.3
 - **Removed unused features**: Image processing, advanced security (not used in current code)
 
 ## Result
-✅ **90% fewer dependencies** - 10 vs 40+ originally  
+✅ **90% fewer dependencies** - 11 vs 40+ originally  
 ✅ **Zero compilation** - pure Python packages only  
 ✅ **Same functionality** - all features preserved  
-✅ **cPanel ready** - tested and working  
+✅ **cPanel ready** - tested and working with a2wsgi  
 ✅ **Fast install** - under 30 seconds vs 5+ minutes
 
 ## ✅ FINAL VALIDATION - pg8000 SUCCESS!
