@@ -23,9 +23,13 @@ def set_file_permissions():
         for root, dirs, files in os.walk('.'):
             for dir_name in dirs:
                 dir_path = Path(root) / dir_name
+                # Skip .git and be careful with venv permissions
                 if not dir_path.name.startswith('.git'):
-                    os.chmod(dir_path, 0o755)
-                    print(f"📁 {dir_path}: 755")
+                    try:
+                        os.chmod(dir_path, 0o755)
+                        print(f"📁 {dir_path}: 755")
+                    except (OSError, PermissionError) as e:
+                        print(f"⚠️  {dir_path}: Permission denied - {e}")
         
         # Set file permissions (644 = rw-r--r--)
         for root, dirs, files in os.walk('.'):
@@ -36,21 +40,25 @@ def set_file_permissions():
                 if '.git' in str(file_path):
                     continue
                 
-                # Executable files (755 = rwxr-xr-x)
-                if file_name in ['passenger_wsgi.py', 'deploy_cpanel.sh'] or file_name.endswith('.sh'):
-                    os.chmod(file_path, 0o755)
-                    print(f"🔧 {file_path}: 755")
-                
-                # Sensitive files (600 = rw-------)
-                elif file_name in ['.env', '.env.local', '.env.production']:
-                    if file_path.exists():
-                        os.chmod(file_path, 0o600)
-                        print(f"🔐 {file_path}: 600")
-                
-                # Regular files (644 = rw-r--r--)
-                else:
-                    os.chmod(file_path, 0o644)
-                    print(f"📄 {file_path}: 644")
+                try:
+                    # Executable files (755 = rwxr-xr-x)
+                    if file_name in ['passenger_wsgi.py', 'deploy_cpanel.sh'] or file_name.endswith('.sh'):
+                        os.chmod(file_path, 0o755)
+                        print(f"🔧 {file_path}: 755")
+                    
+                    # Sensitive files (600 = rw-------)
+                    elif file_name in ['.env', '.env.local', '.env.production']:
+                        if file_path.exists():
+                            os.chmod(file_path, 0o600)
+                            print(f"🔐 {file_path}: 600")
+                    
+                    # Regular files (644 = rw-r--r--)
+                    else:
+                        os.chmod(file_path, 0o644)
+                        print(f"📄 {file_path}: 644")
+                        
+                except (OSError, PermissionError) as e:
+                    print(f"⚠️  {file_path}: Permission denied - {e}")
         
         # Special handling for specific files
         special_files = {
