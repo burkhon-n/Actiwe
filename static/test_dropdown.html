@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dropdown Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1" type="module"></script>
+  <style>
+    /* Dropdown positioning fix */
+    el-dropdown {
+      position: relative;
+    }
+    
+    el-menu {
+      position: absolute;
+      z-index: 50;
+      top: 100%;
+      right: 0;
+      margin-top: 0.25rem;
+    }
+    
+    el-menu[anchor="bottom start"] {
+      right: auto;
+      left: 0;
+    }
+    
+    el-menu[anchor="bottom end"] {
+      right: 0;
+      left: auto;
+    }
+    
+    /* Hide dropdown by default */
+    el-menu:not([data-open]) {
+      display: none;
+    }
+    
+    el-menu[data-open] {
+      display: block;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 p-8">
+  <h1 class="text-2xl font-bold mb-8">Dropdown Positioning Test</h1>
+  
+  <div class="space-y-6">
+    <!-- Size Dropdown Test -->
+    <div class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-lg font-semibold mb-4">Size Dropdown</h2>
+      <div class="relative">
+        <el-dropdown class="inline-block">
+          <button id="size-button" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
+            <span class="truncate">Select Size</span>
+            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500">
+              <path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" />
+            </svg>
+          </button>
+          <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+            <div class="py-1">
+              <a href="#" onclick="selectSize('S'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">S</a>
+              <a href="#" onclick="selectSize('M'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">M</a>
+              <a href="#" onclick="selectSize('L'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">L</a>
+              <a href="#" onclick="selectSize('XL'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">XL</a>
+            </div>
+          </el-menu>
+        </el-dropdown>
+      </div>
+    </div>
+
+    <!-- Gender Dropdown Test -->
+    <div class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-lg font-semibold mb-4">Gender Dropdown</h2>
+      <div class="relative">
+        <el-dropdown class="inline-block">
+          <button id="gender-button" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
+            <span class="truncate">Select Gender</span>
+            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500">
+              <path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" />
+            </svg>
+          </button>
+          <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+            <div class="py-1">
+              <a href="#" onclick="selectGender('Male'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Male</a>
+              <a href="#" onclick="selectGender('Female'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Female</a>
+            </div>
+          </el-menu>
+        </el-dropdown>
+      </div>
+    </div>
+
+    <!-- Test at different positions -->
+    <div class="bg-white p-6 rounded-lg shadow">
+      <h2 class="text-lg font-semibold mb-4">Position Test</h2>
+      <div class="flex justify-between">
+        <div class="relative">
+          <el-dropdown class="inline-block">
+            <button class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-blue-100 px-3 py-2 text-sm font-semibold text-blue-900 ring-1 ring-inset ring-blue-300 hover:bg-blue-200">
+              <span class="truncate">Left</span>
+              <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-blue-500">
+                <path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" />
+              </svg>
+            </button>
+            <el-menu anchor="bottom start" popover class="w-40 origin-top-left rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+              <div class="py-1">
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Option 1</a>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Option 2</a>
+              </div>
+            </el-menu>
+          </el-dropdown>
+        </div>
+
+        <div class="relative">
+          <el-dropdown class="inline-block">
+            <button class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-green-100 px-3 py-2 text-sm font-semibold text-green-900 ring-1 ring-inset ring-green-300 hover:bg-green-200">
+              <span class="truncate">Right</span>
+              <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-green-500">
+                <path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" />
+              </svg>
+            </button>
+            <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+              <div class="py-1">
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Option A</a>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Option B</a>
+              </div>
+            </el-menu>
+          </el-dropdown>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// Dropdown functionality
+function initDropdowns() {
+    document.addEventListener('click', (e) => {
+        const dropdown = e.target.closest('el-dropdown');
+        const isDropdownButton = e.target.closest('el-dropdown button');
+        
+        if (isDropdownButton) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Close all other dropdowns
+            document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+                if (menu !== dropdown.querySelector('el-menu')) {
+                    menu.removeAttribute('data-open');
+                }
+            });
+            
+            // Toggle current dropdown
+            const menu = dropdown.querySelector('el-menu');
+            if (menu.hasAttribute('data-open')) {
+                menu.removeAttribute('data-open');
+            } else {
+                menu.setAttribute('data-open', '');
+            }
+        } else {
+            // Close all dropdowns when clicking outside
+            document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+                menu.removeAttribute('data-open');
+            });
+        }
+    });
+    
+    // Close dropdowns on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+                menu.removeAttribute('data-open');
+            });
+        }
+    });
+}
+
+function selectSize(size) {
+    document.getElementById('size-button').querySelector('span').textContent = size;
+    // Close dropdown
+    document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+        menu.removeAttribute('data-open');
+    });
+}
+
+function selectGender(gender) {
+    document.getElementById('gender-button').querySelector('span').textContent = gender;
+    // Close dropdown
+    document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+        menu.removeAttribute('data-open');
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initDropdowns);
+</script>
+
+</body>
+</html>

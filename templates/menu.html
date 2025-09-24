@@ -134,6 +134,38 @@
     .counter-btn:active {
       transform: scale(0.95);
     }
+    
+    /* Dropdown positioning fix */
+    el-dropdown {
+      position: relative;
+    }
+    
+    el-menu {
+      position: absolute;
+      z-index: 50;
+      top: 100%;
+      right: 0;
+      margin-top: 0.25rem;
+    }
+    
+    el-menu[anchor="bottom start"] {
+      right: auto;
+      left: 0;
+    }
+    
+    el-menu[anchor="bottom end"] {
+      right: 0;
+      left: auto;
+    }
+    
+    /* Hide dropdown by default */
+    el-menu:not([data-open]) {
+      display: none;
+    }
+    
+    el-menu[data-open] {
+      display: block;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-slate-100 text-gray-900 font-sans min-h-screen">
@@ -660,6 +692,48 @@
     const previewDescription = document.getElementById('previewDescription');
     const previewControls = document.getElementById('previewControls');
 
+    // --- DROPDOWN FUNCTIONALITY ---
+    function initDropdowns() {
+        document.addEventListener('click', (e) => {
+            const dropdown = e.target.closest('el-dropdown');
+            const isDropdownButton = e.target.closest('el-dropdown button');
+            
+            if (isDropdownButton) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Close all other dropdowns
+                document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+                    if (menu !== dropdown.querySelector('el-menu')) {
+                        menu.removeAttribute('data-open');
+                    }
+                });
+                
+                // Toggle current dropdown
+                const menu = dropdown.querySelector('el-menu');
+                if (menu.hasAttribute('data-open')) {
+                    menu.removeAttribute('data-open');
+                } else {
+                    menu.setAttribute('data-open', '');
+                }
+            } else {
+                // Close all dropdowns when clicking outside
+                document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+                    menu.removeAttribute('data-open');
+                });
+            }
+        });
+        
+        // Close dropdowns on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+                    menu.removeAttribute('data-open');
+                });
+            }
+        });
+    }
+
     // --- GLOBAL FUNCTIONS (for onclick handlers) ---
     window.toggleCart = function() {
         cartDrawer.classList.toggle('translate-x-full');
@@ -668,10 +742,18 @@
 
     window.handleSizeSelection = function(itemId, size) {
         shopState.setSize(itemId, size);
+        // Close the dropdown
+        document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+            menu.removeAttribute('data-open');
+        });
     };
 
     window.handleGenderSelection = function(itemId, gender) {
         shopState.setGender(itemId, gender);
+        // Close the dropdown
+        document.querySelectorAll('el-menu[data-open]').forEach(menu => {
+            menu.removeAttribute('data-open');
+        });
     };
 
     window.increaseQuantity = function(itemId) {
@@ -1014,6 +1096,9 @@
 
     // --- INITIALIZATION ---
     document.addEventListener("DOMContentLoaded", () => {
+        // Initialize dropdowns
+        initDropdowns();
+        
         // Initialize Telegram WebApp
         if (window.Telegram?.WebApp) {
             window.Telegram.WebApp.ready();
