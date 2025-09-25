@@ -142,12 +142,16 @@
     }
     
     .dropdown-menu {
-      position: absolute;
-      z-index: 50;
-      top: 100%;
-      right: 0;
+      position: fixed;
+      z-index: 1000;
       margin-top: 0.25rem;
       display: none;
+      max-height: 300px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 6px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
     
     .dropdown-menu.left {
@@ -709,7 +713,24 @@
                 // Toggle current dropdown
                 const menu = dropdown.querySelector('.dropdown-menu');
                 if (menu) {
-                    menu.classList.toggle('show');
+                    if (menu.classList.contains('show')) {
+                        menu.classList.remove('show');
+                    } else {
+                        // Position the dropdown relative to the button
+                        const button = dropdown.querySelector('.dropdown-button');
+                        const rect = button.getBoundingClientRect();
+                        
+                        // Position dropdown below the button
+                        menu.style.top = (rect.bottom + 4) + 'px';
+                        menu.style.left = (rect.right - 160) + 'px'; // 160px = w-40 width
+                        
+                        // Ensure dropdown doesn't go off-screen
+                        if (rect.right - 160 < 0) {
+                            menu.style.left = rect.left + 'px';
+                        }
+                        
+                        menu.classList.add('show');
+                    }
                 }
             } else {
                 // Close all dropdowns when clicking outside
