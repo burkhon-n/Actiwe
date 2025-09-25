@@ -136,34 +136,31 @@
     }
     
     /* Dropdown positioning fix */
-    el-dropdown {
+    .dropdown {
       position: relative;
+      display: inline-block;
     }
     
-    el-menu {
+    .dropdown-menu {
       position: absolute;
       z-index: 50;
       top: 100%;
       right: 0;
       margin-top: 0.25rem;
+      display: none;
     }
     
-    el-menu[anchor="bottom start"] {
+    .dropdown-menu.left {
       right: auto;
       left: 0;
     }
     
-    el-menu[anchor="bottom end"] {
+    .dropdown-menu.right {
       right: 0;
       left: auto;
     }
     
-    /* Hide dropdown by default */
-    el-menu:not([data-open]) {
-      display: none;
-    }
-    
-    el-menu[data-open] {
+    .dropdown-menu.show {
       display: block;
     }
   </style>
@@ -695,31 +692,29 @@
     // --- DROPDOWN FUNCTIONALITY ---
     function initDropdowns() {
         document.addEventListener('click', (e) => {
-            const dropdown = e.target.closest('el-dropdown');
-            const isDropdownButton = e.target.closest('el-dropdown button');
+            const dropdown = e.target.closest('.dropdown');
+            const isDropdownButton = e.target.closest('.dropdown .dropdown-button');
             
             if (isDropdownButton) {
                 e.preventDefault();
                 e.stopPropagation();
                 
                 // Close all other dropdowns
-                document.querySelectorAll('el-menu[data-open]').forEach(menu => {
-                    if (menu !== dropdown.querySelector('el-menu')) {
-                        menu.removeAttribute('data-open');
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    if (menu !== dropdown.querySelector('.dropdown-menu')) {
+                        menu.classList.remove('show');
                     }
                 });
                 
                 // Toggle current dropdown
-                const menu = dropdown.querySelector('el-menu');
-                if (menu.hasAttribute('data-open')) {
-                    menu.removeAttribute('data-open');
-                } else {
-                    menu.setAttribute('data-open', '');
+                const menu = dropdown.querySelector('.dropdown-menu');
+                if (menu) {
+                    menu.classList.toggle('show');
                 }
             } else {
                 // Close all dropdowns when clicking outside
-                document.querySelectorAll('el-menu[data-open]').forEach(menu => {
-                    menu.removeAttribute('data-open');
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
                 });
             }
         });
@@ -727,8 +722,8 @@
         // Close dropdowns on escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                document.querySelectorAll('el-menu[data-open]').forEach(menu => {
-                    menu.removeAttribute('data-open');
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
                 });
             }
         });
@@ -743,16 +738,16 @@
     window.handleSizeSelection = function(itemId, size) {
         shopState.setSize(itemId, size);
         // Close the dropdown
-        document.querySelectorAll('el-menu[data-open]').forEach(menu => {
-            menu.removeAttribute('data-open');
+        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+            menu.classList.remove('show');
         });
     };
 
     window.handleGenderSelection = function(itemId, gender) {
         shopState.setGender(itemId, gender);
         // Close the dropdown
-        document.querySelectorAll('el-menu[data-open]').forEach(menu => {
-            menu.removeAttribute('data-open');
+        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+            menu.classList.remove('show');
         });
     };
 
@@ -879,16 +874,14 @@
             });
             
             sizeControlsHTML = `
-                <div class="relative">
-                    <el-dropdown class="inline-block">
-                        <button id="preview-size-button" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
+                <div class="dropdown">
+                        <button id="preview-size-button" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
                             <span class="truncate">${currentSize}</span>
                             <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
                         </button>
-                        <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+                        <div class="dropdown-menu right w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                             <div class="py-1">${sizeMenuItemsHTML}</div>
-                        </el-menu>
-                    </el-dropdown>
+                        </div>
                 </div>`;
         }
 
@@ -896,19 +889,17 @@
         if (!item.gender_neutral) {
             const genderText = currentGender === 'male' ? 'Erkak' : 'Ayol';
             genderControlsHTML = `
-                <div class="relative">
-                    <el-dropdown class="inline-block">
-                        <button id="preview-gender-button" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
+                <div class="dropdown">
+                        <button id="preview-gender-button" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
                             <span class="truncate">${genderText}</span>
                             <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
                         </button>
-                        <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+                        <div class="dropdown-menu right w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                             <div class="py-1">
                                 <a href="#" onclick="handleGenderSelection('${item.id}', 'male'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Erkak</a>
                                 <a href="#" onclick="handleGenderSelection('${item.id}', 'female'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ayol</a>
                             </div>
-                        </el-menu>
-                    </el-dropdown>
+                        </div>
                 </div>`;
         }
         
@@ -993,16 +984,14 @@
                 });
 
                 sizeControlsHTML = `
-                  <div class="relative">
-                    <el-dropdown class="inline-block">
-                        <button id="size-button-${item.id}" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 transition-colors duration-200">
+                  <div class="dropdown">
+                        <button id="size-button-${item.id}" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 transition-colors duration-200">
                             <span class="truncate">${defaultSize}</span>
                             <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
                         </button>
-                        <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+                        <div class="dropdown-menu right w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                             <div class="py-1">${sizeMenuItemsHTML}</div>
-                        </el-menu>
-                    </el-dropdown>
+                        </div>
                   </div>`;
             } else {
                 defaultSize = 'N/A';
@@ -1010,19 +999,18 @@
 
             if (!item.gender_neutral) {
                 genderControlsHTML = `
-                  <div class="relative">
-                    <el-dropdown class="inline-block">
-                        <button id="gender-button-${item.id}" class="inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 transition-colors duration-200">
+                  <div class="dropdown">
+                        <button id="gender-button-${item.id}" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 transition-colors duration-200">
                             <span class="truncate">Erkak</span>
                             <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
                         </button>
-                        <el-menu anchor="bottom end" popover class="w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75">
+                        <div class="dropdown-menu right w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                             <div class="py-1">
                                 <a href="#" onclick="handleGenderSelection('${item.id}', 'male'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Erkak</a>
                                 <a href="#" onclick="handleGenderSelection('${item.id}', 'female'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ayol</a>
                             </div>
-                        </el-menu>
-                    </el-dropdown>
+                        </div>
+                  </div>`;
                   </div>`;
             }
 
