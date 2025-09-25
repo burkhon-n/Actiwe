@@ -141,9 +141,16 @@
       display: inline-block;
     }
     
+    /* Ensure product card content allows dropdown overflow */
+    .product-card {
+      overflow: visible;
+    }
+    
     .dropdown-menu {
-      position: fixed;
+      position: absolute;
       z-index: 1000;
+      top: 100%;
+      right: 0;
       margin-top: 0.25rem;
       display: none;
       max-height: 300px;
@@ -713,24 +720,7 @@
                 // Toggle current dropdown
                 const menu = dropdown.querySelector('.dropdown-menu');
                 if (menu) {
-                    if (menu.classList.contains('show')) {
-                        menu.classList.remove('show');
-                    } else {
-                        // Position the dropdown relative to the button
-                        const button = dropdown.querySelector('.dropdown-button');
-                        const rect = button.getBoundingClientRect();
-                        
-                        // Position dropdown below the button
-                        menu.style.top = (rect.bottom + 4) + 'px';
-                        menu.style.left = (rect.right - 160) + 'px'; // 160px = w-40 width
-                        
-                        // Ensure dropdown doesn't go off-screen
-                        if (rect.right - 160 < 0) {
-                            menu.style.left = rect.left + 'px';
-                        }
-                        
-                        menu.classList.add('show');
-                    }
+                    menu.classList.toggle('show');
                 }
             } else {
                 // Close all dropdowns when clicking outside
@@ -1035,8 +1025,10 @@
             }
 
             productHTML += `
-            <div class="product-card shadow-lg rounded-3xl overflow-hidden flex flex-col animate-slide-up">
-              <img src="${item.image}" alt="${item.title}" loading="lazy" class="w-full h-56 object-cover cursor-pointer hover:scale-105 transition-transform duration-300" onclick="openImagePreview('${item.id}')">
+            <div class="product-card shadow-lg rounded-3xl flex flex-col animate-slide-up">
+              <div class="rounded-t-3xl overflow-hidden">
+                <img src="${item.image}" alt="${item.title}" loading="lazy" class="w-full h-56 object-cover cursor-pointer hover:scale-105 transition-transform duration-300" onclick="openImagePreview('${item.id}')">
+              </div>
               <div class="flex flex-col p-6 flex-grow">
                 <div class="flex justify-between items-start w-full mb-4">
                   <p class="font-bold text-xl text-gray-800 line-clamp-2">${item.title}</p>
