@@ -34,10 +34,10 @@
             'slide-up': 'slideUp 0.3s ease-out',
             'bounce-soft': 'bounceSoft 0.6s ease-in-out',
             'pulse-soft': 'pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            /* START: Added Alert Animations */
             'slide-down-fade-in': 'slideDownFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             'fade-out-up': 'fadeOutUp 0.5s ease-out forwards',
-            /* END: Added Alert Animations */
+            'dropdown-enter': 'dropdownEnter 0.2s ease-out',
+            'dropdown-exit': 'dropdownExit 0.15s ease-in forwards',
           },
           keyframes: {
             fadeIn: {
@@ -56,7 +56,6 @@
               '0%, 100%': { opacity: '1' },
               '50%': { opacity: '0.8' }
             },
-            /* START: Added Alert Keyframes */
             slideDownFadeIn: {
               '0%': { opacity: '0', transform: 'translateY(-20px) scale(0.95)' },
               '100%': { opacity: '1', transform: 'translateY(0) scale(1)' }
@@ -64,8 +63,15 @@
             fadeOutUp: {
               '0%': { opacity: '1', transform: 'translateY(0)' },
               '100%': { opacity: '0', transform: 'translateY(-20px)' }
+            },
+            dropdownEnter: {
+              '0%': { opacity: '0', transform: 'scale(0.95) translateY(-10px)' },
+              '100%': { opacity: '1', transform: 'scale(1) translateY(0)' }
+            },
+            dropdownExit: {
+              '0%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+              '100%': { opacity: '0', transform: 'scale(0.95) translateY(-10px)' }
             }
-            /* END: Added Alert Keyframes */
           }
         }
       }
@@ -80,11 +86,18 @@
     .product-card {
       background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
     }
     .product-card:hover {
       transform: translateY(-8px);
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
     }
+    
+    /* Prevent hover transform when dropdown is open */
+    .product-card:has(.dropdown-menu.show):hover {
+      transform: translateY(-2px);
+    }
+    
     .cart-badge {
       animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
       background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
@@ -135,44 +148,169 @@
       transform: scale(0.95);
     }
     
-    /* Dropdown positioning fix */
+    /* Enhanced Dropdown System */
     .dropdown {
       position: relative;
       display: inline-block;
     }
     
-    /* Ensure product card content allows dropdown overflow */
-    .product-card {
-      overflow: visible;
+    .dropdown-button {
+      position: relative;
+      z-index: 1;
     }
     
     .dropdown-menu {
       position: absolute;
-      z-index: 1000;
-      top: 100%;
+      z-index: 9999;
+      top: calc(100% + 4px);
       right: 0;
-      margin-top: 0.25rem;
-      display: none;
-      max-height: 300px;
+      min-width: 160px;
+      max-width: 200px;
+      max-height: 240px;
       overflow-y: auto;
       background: white;
       border: 1px solid rgba(0, 0, 0, 0.1);
-      border-radius: 6px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.95) translateY(-10px);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-origin: top right;
+      pointer-events: none;
     }
     
     .dropdown-menu.left {
       right: auto;
       left: 0;
+      transform-origin: top left;
     }
     
-    .dropdown-menu.right {
-      right: 0;
-      left: auto;
+    .dropdown-menu.center {
+      right: auto;
+      left: 50%;
+      transform: translateX(-50%) scale(0.95) translateY(-10px);
+      transform-origin: top center;
+    }
+    
+    .dropdown-menu.center.show {
+      transform: translateX(-50%) scale(1) translateY(0);
+      pointer-events: auto;
     }
     
     .dropdown-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1) translateY(0);
+      animation: dropdown-enter 0.2s ease-out;
+      pointer-events: auto;
+    }
+    
+    .dropdown-menu.hiding {
+      animation: dropdown-exit 0.15s ease-in forwards;
+    }
+    
+    .dropdown-menu a {
       display: block;
+      padding: 8px 12px;
+      color: #374151;
+      text-decoration: none;
+      font-size: 14px;
+      transition: background-color 0.15s ease;
+      border-radius: 4px;
+      margin: 2px 4px;
+    }
+    
+    .dropdown-menu a:hover,
+    .dropdown-menu a:focus {
+      background-color: #f3f4f6;
+      color: #1f2937;
+      outline: none;
+    }
+    
+    .dropdown-menu a:active {
+      background-color: #e5e7eb;
+    }
+    
+    /* Prevent text selection on dropdown buttons */
+    .dropdown-button {
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    
+    /* Mobile-specific dropdown adjustments */
+    @media (max-width: 768px) {
+      .dropdown-menu {
+        min-width: 140px;
+        max-height: 200px;
+        font-size: 14px;
+      }
+      
+      .dropdown-menu a {
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+      
+      .product-card:hover {
+        transform: translateY(-4px);
+      }
+      
+      .product-card:has(.dropdown-menu.show):hover {
+        transform: translateY(-1px);
+      }
+    }
+    
+    /* Modal-specific dropdown adjustments */
+    #imagePreviewModal .dropdown-menu {
+      z-index: 10000;
+    }
+    
+    #imagePreviewModal .dropdown-menu.show {
+      pointer-events: auto;
+    }
+    
+    /* Scrollbar styling for dropdown */
+    .dropdown-menu::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .dropdown-menu::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .dropdown-menu::-webkit-scrollbar-thumb {
+      background-color: #d1d5db;
+      border-radius: 2px;
+    }
+    
+    .dropdown-menu::-webkit-scrollbar-thumb:hover {
+      background-color: #9ca3af;
+    }
+    
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+      .dropdown-menu {
+        border: 2px solid #000;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      }
+      
+      .dropdown-menu a:hover {
+        background-color: #000;
+        color: #fff;
+      }
+    }
+    
+    /* Focus management for accessibility */
+    .dropdown-button:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+    
+    .dropdown-menu a:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: -2px;
     }
   </style>
 </head>
@@ -250,7 +388,7 @@
   </div>
 
 <script>
-    // --- START: Added Alert Functionality ---
+    // --- Alert Functionality ---
     function showAlert(message, type = 'success') {
         const alertContainer = document.getElementById('alert-container');
         if (!alertContainer) return;
@@ -303,9 +441,8 @@
             }
         }, 4000);
     }
-    // --- END: Added Alert Functionality ---
 
-    // --- ENHANCED STATE MANAGEMENT ---
+    // --- Enhanced State Management ---
     class ShopState {
         constructor() {
             this.cart = {};
@@ -315,7 +452,6 @@
             this.selectedQuantities = {};
         }
 
-        // Get cart key for item, size, and gender combination
         getCartKey(itemId, size, gender) {
             if (gender) {
                 return `${itemId}-${size}-${gender}`;
@@ -323,20 +459,16 @@
             return `${itemId}-${size}`;
         }
 
-        // Get current quantity for item
         getCurrentQuantity(itemId) {
             return this.selectedQuantities[itemId] || 1;
         }
 
-        // Set quantity for item
         setQuantity(itemId, quantity) {
             this.selectedQuantities[itemId] = Math.max(1, quantity);
             this.updateCardUI(itemId);
             this.updateModalUI(itemId);
-            // Don't automatically render actions here, let the caller handle it
         }
 
-        // Get current size for item
         getCurrentSize(itemId) {
             if (!this.selectedSizes[itemId] && this.products[itemId]) {
                 const product = this.products[itemId];
@@ -350,38 +482,32 @@
             return this.selectedSizes[itemId];
         }
 
-        // Get current gender for item
         getCurrentGender(itemId) {
             if (!this.selectedGenders[itemId] && this.products[itemId]) {
                 const product = this.products[itemId];
                 if (product.gender_neutral) {
                     this.selectedGenders[itemId] = null;
                 } else {
-                    this.selectedGenders[itemId] = 'male'; // default to male
+                    this.selectedGenders[itemId] = 'male';
                 }
             }
             return this.selectedGenders[itemId];
         }
 
-        // Set size for item
         setSize(itemId, size) {
             this.selectedSizes[itemId] = size;
-            // Sync quantity with cart for the new size and current gender
             const gender = this.getCurrentGender(itemId);
             this.syncQuantityWithCart(itemId, size, gender);
             this.updateAllUI(itemId);
         }
 
-        // Set gender for item
         setGender(itemId, gender) {
             this.selectedGenders[itemId] = gender;
-            // Sync quantity with cart for the current size and new gender
             const size = this.getCurrentSize(itemId);
             this.syncQuantityWithCart(itemId, size, gender);
             this.updateAllUI(itemId);
         }
 
-        // Get cart quantity for specific item, size, and gender
         getCartQuantity(itemId, size, gender) {
             const currentSize = size || this.getCurrentSize(itemId);
             const currentGender = gender !== undefined ? gender : this.getCurrentGender(itemId);
@@ -389,7 +515,6 @@
             return this.cart[key] || 0;
         }
 
-        // Add item to cart
         addToCart(itemId) {
             const size = this.getCurrentSize(itemId);
             const gender = this.getCurrentGender(itemId);
@@ -397,12 +522,11 @@
             const key = this.getCartKey(itemId, size, gender);
             
             this.cart[key] = (this.cart[key] || 0) + quantity;
-            showAlert("Mahsulot savatga qo'shildi!"); // MODIFIED: Call alert
+            showAlert("Mahsulot savatga qo'shildi!");
             this.syncCartState();
             this.updateAllUI(itemId);
         }
 
-        // Update item in cart
         updateCartItem(itemId) {
             const size = this.getCurrentSize(itemId);
             const gender = this.getCurrentGender(itemId);
@@ -410,24 +534,22 @@
             const key = this.getCartKey(itemId, size, gender);
             
             this.cart[key] = quantity;
-            showAlert("Savat yangilandi!"); // MODIFIED: Call alert
+            showAlert("Savat yangilandi!");
             this.syncCartState();
             this.updateAllUI(itemId);
         }
 
-        // Remove item from cart
         removeFromCart(itemId) {
             const size = this.getCurrentSize(itemId);
             const gender = this.getCurrentGender(itemId);
             const key = this.getCartKey(itemId, size, gender);
             
             delete this.cart[key];
-            showAlert("Mahsulot o'chirildi", 'info'); // MODIFIED: Call alert
+            showAlert("Mahsulot o'chirildi", 'info');
             this.syncCartState();
             this.updateAllUI(itemId);
         }
 
-        // Check if item is in cart
         isInCart(itemId, size, gender) {
             const currentSize = size || this.getCurrentSize(itemId);
             const currentGender = gender !== undefined ? gender : this.getCurrentGender(itemId);
@@ -435,7 +557,6 @@
             return this.cart[key] > 0;
         }
 
-        // Sync quantity with cart when switching between items, sizes, or genders
         syncQuantityWithCart(itemId, size, gender) {
             const cartQuantity = this.getCartQuantity(itemId, size, gender);
             if (cartQuantity > 0) {
@@ -445,11 +566,9 @@
             }
         }
 
-        // Sync cart state and update UI
         syncCartState() {
             const totalItems = Object.values(this.cart).reduce((sum, qty) => sum + qty, 0);
             
-            // Update cart badge
             const cartCountEl = document.getElementById('cartCount');
             if (cartCountEl) {
                 cartCountEl.textContent = totalItems;
@@ -461,9 +580,7 @@
             this.debouncedUpdateCart();
         }
 
-        // Update all UI elements for a specific item
         updateAllUI(itemId) {
-            // First sync quantity with cart if item is in cart
             const size = this.getCurrentSize(itemId);
             const gender = this.getCurrentGender(itemId);
             this.syncQuantityWithCart(itemId, size, gender);
@@ -473,24 +590,20 @@
             this.renderProductActions(itemId);
         }
 
-        // Update card UI elements
         updateCardUI(itemId) {
             const quantity = this.getCurrentQuantity(itemId);
             const size = this.getCurrentSize(itemId);
             const gender = this.getCurrentGender(itemId);
 
-            // Update counter
             const cardCounter = document.getElementById(`counter-${itemId}`);
             if (cardCounter) cardCounter.textContent = quantity;
 
-            // Update size button (only if it exists for items with sizes)
             const cardSizeBtn = document.getElementById(`size-button-${itemId}`);
             if (cardSizeBtn) {
                 const sizeSpan = cardSizeBtn.querySelector('span');
                 if (sizeSpan) sizeSpan.textContent = size;
             }
 
-            // Update gender button (only if it exists for items that aren't gender neutral)
             const cardGenderBtn = document.getElementById(`gender-button-${itemId}`);
             if (cardGenderBtn && gender) {
                 const genderSpan = cardGenderBtn.querySelector('span');
@@ -500,7 +613,6 @@
             }
         }
 
-        // Update modal UI elements
         updateModalUI(itemId) {
             const currentModalItem = document.getElementById('imagePreviewModal')?.dataset?.currentItemId;
             if (currentModalItem !== itemId) return;
@@ -509,18 +621,15 @@
             const size = this.getCurrentSize(itemId);
             const gender = this.getCurrentGender(itemId);
 
-            // Update modal counter
             const previewCounter = document.getElementById('preview-counter');
             if (previewCounter) previewCounter.textContent = quantity;
 
-            // Update modal size button (only if it exists for items with sizes)
             const previewSizeBtn = document.getElementById('preview-size-button');
             if (previewSizeBtn) {
                 const sizeSpan = previewSizeBtn.querySelector('span');
                 if (sizeSpan) sizeSpan.textContent = size;
             }
 
-            // Update modal gender button (only if it exists for items that aren't gender neutral)
             const previewGenderBtn = document.getElementById('preview-gender-button');
             if (previewGenderBtn && gender) {
                 const genderSpan = previewGenderBtn.querySelector('span');
@@ -529,21 +638,18 @@
                 }
             }
 
-            // Update modal actions
             const previewActionDiv = document.getElementById('preview-action-buttons');
             if (previewActionDiv) {
                 previewActionDiv.innerHTML = this.generateActionButtons(itemId);
             }
         }
 
-        // Generate action buttons HTML
         generateActionButtons(itemId) {
             const size = this.getCurrentSize(itemId);
             const gender = this.getCurrentGender(itemId);
             const isInCart = this.isInCart(itemId, size, gender);
 
             if (isInCart) {
-                // Ensure quantity matches what's in cart
                 const cartQty = this.getCartQuantity(itemId, size, gender);
                 this.selectedQuantities[itemId] = cartQty;
                 
@@ -557,15 +663,12 @@
             }
         }
 
-        // Render product actions
         renderProductActions(itemId) {
             const actionHTML = this.generateActionButtons(itemId);
             
-            // Update card actions
             const cardActionDiv = document.getElementById(`action-${itemId}`);
             if (cardActionDiv) cardActionDiv.innerHTML = actionHTML;
             
-            // Update modal actions if it's the current item
             const currentModalItem = document.getElementById('imagePreviewModal')?.dataset?.currentItemId;
             if (currentModalItem === itemId) {
                 const previewActionDiv = document.getElementById('preview-action-buttons');
@@ -573,7 +676,6 @@
             }
         }
 
-        // Render cart items
         renderCartItems() {
             const cartItemsEl = document.getElementById('cartItems');
             const cartTotalEl = document.getElementById('cartTotal');
@@ -604,7 +706,6 @@
                     const itemTotal = parseFloat(product.price) * this.cart[key];
                     totalPrice += itemTotal;
                     
-                    // Build details array for display
                     let details = [];
                     if (size !== 'N/A') {
                         details.push(`O'lcham: ${size}`);
@@ -647,7 +748,6 @@
             orderBtn.disabled = false;
         }
 
-        // Format price utility
         formatPrice(price) {
             return new Intl.NumberFormat('uz-UZ', { 
                 style: 'currency', 
@@ -656,7 +756,6 @@
             }).format(price).replace('UZS', 'UZS');
         }
 
-        // Debounced cart update
         debouncedUpdateCart = this.debounce(async () => {
             try {
                 const response = await fetch('/api/cart/update', {
@@ -673,7 +772,6 @@
             }
         }, 500);
 
-        // Debounce utility
         debounce(func, delay) {
             let timeoutId;
             return (...args) => {
@@ -700,62 +798,275 @@
     const previewDescription = document.getElementById('previewDescription');
     const previewControls = document.getElementById('previewControls');
 
-    // --- DROPDOWN FUNCTIONALITY ---
+    // --- Enhanced Dropdown Functionality ---
     function initDropdowns() {
-        // Use event delegation to handle dynamically created dropdowns
+        // Simplified dropdown click handler with explicit debugging
         document.addEventListener('click', (e) => {
-            const dropdown = e.target.closest('.dropdown');
-            const isDropdownButton = e.target.closest('.dropdown .dropdown-button');
+            console.log('Click detected on:', e.target);
             
-            if (isDropdownButton) {
+            // Check if clicked element is a dropdown button or inside one
+            const dropdownButton = e.target.closest('.dropdown-button');
+            const dropdown = e.target.closest('.dropdown');
+            
+            if (dropdownButton && dropdown) {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // Close all other dropdowns
-                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                    if (menu !== dropdown.querySelector('.dropdown-menu')) {
-                        menu.classList.remove('show');
+                console.log('Dropdown button clicked:', dropdownButton.id);
+                
+                const menu = dropdown.querySelector('.dropdown-menu');
+                if (!menu) {
+                    console.log('No menu found for dropdown');
+                    return;
+                }
+                
+                // Close all other dropdowns first
+                document.querySelectorAll('.dropdown-menu.show').forEach(otherMenu => {
+                    if (otherMenu !== menu) {
+                        console.log('Closing other dropdown');
+                        closeDropdown(otherMenu);
                     }
                 });
                 
                 // Toggle current dropdown
-                const menu = dropdown.querySelector('.dropdown-menu');
-                if (menu) {
-                    menu.classList.toggle('show');
+                if (menu.classList.contains('show')) {
+                    console.log('Closing current dropdown');
+                    closeDropdown(menu);
+                } else {
+                    console.log('Opening dropdown');
+                    
+                    // Position the dropdown
+                    if (dropdown.closest('#imagePreviewModal')) {
+                        console.log('Using modal positioning');
+                        positionModalDropdown(dropdown);
+                    } else {
+                        console.log('Using regular positioning');
+                        positionDropdown(dropdown);
+                    }
+                    
+                    // Show the dropdown
+                    menu.classList.add('show');
+                    console.log('Dropdown shown, classes:', menu.className);
+                    
+                    // Focus management
+                    const firstLink = menu.querySelector('a');
+                    if (firstLink) {
+                        setTimeout(() => firstLink.focus(), 100);
+                    }
                 }
-            } else {
+            } else if (!e.target.closest('.dropdown-menu')) {
                 // Close all dropdowns when clicking outside
+                console.log('Clicking outside, closing all dropdowns');
                 document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                    menu.classList.remove('show');
+                    closeDropdown(menu);
                 });
             }
         });
         
-        // Close dropdowns on escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                    menu.classList.remove('show');
-                });
-            }
-        });
-        
-        // Handle dropdown menu item clicks (for dynamic content)
+        // Handle dropdown menu item clicks
         document.addEventListener('click', (e) => {
             if (e.target.matches('.dropdown-menu a')) {
-                // Close dropdown after selection
+                console.log('Dropdown menu item clicked:', e.target.textContent);
                 const dropdown = e.target.closest('.dropdown');
                 if (dropdown) {
                     const menu = dropdown.querySelector('.dropdown-menu');
                     if (menu) {
-                        menu.classList.remove('show');
+                        closeDropdown(menu);
                     }
                 }
             }
         });
+        
+        // Enhanced dropdown positioning function
+        function positionDropdown(dropdown) {
+            const menu = dropdown.querySelector('.dropdown-menu');
+            if (!menu) return;
+            
+            const button = dropdown.querySelector('.dropdown-button');
+            const rect = button.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Reset positioning classes
+            menu.classList.remove('left', 'right', 'center');
+            menu.style.maxHeight = '';
+            menu.style.top = '';
+            menu.style.bottom = '';
+            menu.style.marginTop = '';
+            menu.style.marginBottom = '';
+            
+            // Determine horizontal positioning
+            const spaceRight = viewportWidth - rect.right;
+            const spaceLeft = rect.left;
+            const menuWidth = 160;
+            
+            if (spaceRight >= menuWidth) {
+                menu.classList.add('right');
+            } else if (spaceLeft >= menuWidth) {
+                menu.classList.add('left');
+            } else {
+                menu.classList.add('center');
+            }
+            
+            // Vertical positioning
+            const spaceBelow = viewportHeight - rect.bottom - 10;
+            const spaceAbove = rect.top - 10;
+            
+            if (spaceBelow < 200 && spaceAbove > spaceBelow) {
+                menu.style.top = 'auto';
+                menu.style.bottom = '100%';
+                menu.style.marginBottom = '4px';
+                menu.style.maxHeight = `${Math.min(spaceAbove, 240)}px`;
+            } else {
+                menu.style.top = 'calc(100% + 4px)';
+                menu.style.bottom = 'auto';
+                menu.style.maxHeight = `${Math.min(spaceBelow, 240)}px`;
+            }
+        }
+        
+        // Special positioning function for modal dropdowns
+        function positionModalDropdown(dropdown) {
+            const menu = dropdown.querySelector('.dropdown-menu');
+            if (!menu) {
+                console.log('No menu found in dropdown');
+                return;
+            }
+            
+            const button = dropdown.querySelector('.dropdown-button');
+            const modal = dropdown.closest('#imagePreviewModal');
+            
+            if (!modal) {
+                console.log('No modal found, using regular positioning');
+                positionDropdown(dropdown);
+                return;
+            }
+            
+            console.log('Positioning modal dropdown');
+            
+            // Reset positioning
+            menu.classList.remove('left', 'right', 'center');
+            menu.style.maxHeight = '';
+            menu.style.top = '';
+            menu.style.bottom = '';
+            menu.style.marginTop = '';
+            menu.style.marginBottom = '';
+            
+            // For modal dropdowns, use simpler positioning
+            // Default to right positioning with fallback to left
+            const buttonRect = button.getBoundingClientRect();
+            const modalRect = modal.getBoundingClientRect();
+            const menuWidth = 160;
+            
+            const spaceRight = modalRect.right - buttonRect.right;
+            const spaceLeft = buttonRect.left - modalRect.left;
+            
+            if (spaceRight >= menuWidth) {
+                menu.classList.add('right');
+                console.log('Modal dropdown positioned right');
+            } else if (spaceLeft >= menuWidth) {
+                menu.classList.add('left');
+                console.log('Modal dropdown positioned left');
+            } else {
+                menu.classList.add('center');
+                console.log('Modal dropdown positioned center');
+            }
+            
+            // Always position below in modal for simplicity
+            menu.style.top = 'calc(100% + 4px)';
+            menu.style.maxHeight = '200px';
+            console.log('Modal dropdown positioned below button');
+        }
+        
+        // Close dropdown with animation
+        function closeDropdown(menu, callback) {
+            if (!menu.classList.contains('show')) return;
+            
+            menu.classList.add('hiding');
+            menu.classList.remove('show');
+            
+            setTimeout(() => {
+                menu.classList.remove('hiding');
+                if (callback) callback();
+            }, 150);
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const activeDropdown = document.querySelector('.dropdown-menu.show');
+            if (!activeDropdown) return;
+            
+            const links = activeDropdown.querySelectorAll('a');
+            const currentFocus = document.activeElement;
+            const currentIndex = Array.from(links).indexOf(currentFocus);
+            
+            switch (e.key) {
+                case 'Escape':
+                    e.preventDefault();
+                    closeDropdown(activeDropdown);
+                    const dropdown = activeDropdown.closest('.dropdown');
+                    const button = dropdown?.querySelector('.dropdown-button');
+                    if (button) button.focus();
+                    break;
+                    
+                case 'ArrowDown':
+                    e.preventDefault();
+                    const nextIndex = currentIndex < links.length - 1 ? currentIndex + 1 : 0;
+                    links[nextIndex]?.focus();
+                    break;
+                    
+                case 'ArrowUp':
+                    e.preventDefault();
+                    const prevIndex = currentIndex > 0 ? currentIndex - 1 : links.length - 1;
+                    links[prevIndex]?.focus();
+                    break;
+                    
+                case 'Enter':
+                case ' ':
+                    if (currentFocus && currentFocus.matches('.dropdown-menu a')) {
+                        e.preventDefault();
+                        currentFocus.click();
+                    }
+                    break;
+            }
+        });
+        
+        // Reposition dropdowns on window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    const dropdown = menu.closest('.dropdown');
+                    if (dropdown) {
+                        if (dropdown.closest('#imagePreviewModal')) {
+                            positionModalDropdown(dropdown);
+                        } else {
+                            positionDropdown(dropdown);
+                        }
+                    }
+                });
+            }, 100);
+        });
+        
+        // Handle scroll events to reposition dropdowns
+        let scrollTimeout;
+        window.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    const dropdown = menu.closest('.dropdown');
+                    if (dropdown) {
+                        // Only reposition main page dropdowns on scroll, modal dropdowns are fixed
+                        if (!dropdown.closest('#imagePreviewModal')) {
+                            positionDropdown(dropdown);
+                        }
+                    }
+                });
+            }, 50);
+        }, { passive: true });
     }
 
-    // --- GLOBAL FUNCTIONS (for onclick handlers) ---
+    // --- Global Functions ---
     window.toggleCart = function() {
         cartDrawer.classList.toggle('translate-x-full');
         cartBackdrop.classList.toggle('hidden');
@@ -763,18 +1074,10 @@
 
     window.handleSizeSelection = function(itemId, size) {
         shopState.setSize(itemId, size);
-        // Close the dropdown
-        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-            menu.classList.remove('show');
-        });
     };
 
     window.handleGenderSelection = function(itemId, gender) {
         shopState.setGender(itemId, gender);
-        // Close the dropdown
-        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-            menu.classList.remove('show');
-        });
     };
 
     window.increaseQuantity = function(itemId) {
@@ -783,10 +1086,8 @@
         const gender = shopState.getCurrentGender(itemId);
         const isInCart = shopState.isInCart(itemId, size, gender);
         
-        // If item is in cart, allow increasing beyond cart quantity for updates
         if (isInCart) {
             shopState.setQuantity(itemId, currentQty + 1);
-            // Enable update button since quantity changed
             updateButtonState(itemId);
         } else {
             shopState.setQuantity(itemId, currentQty + 1);
@@ -801,14 +1102,12 @@
         
         if (currentQty > 1) {
             shopState.setQuantity(itemId, currentQty - 1);
-            // Enable update button since quantity changed
             if (isInCart) {
                 updateButtonState(itemId);
             }
         }
     };
 
-    // Cart management functions
     window.updateCartQuantity = function(cartKey, newQuantity) {
         if (newQuantity <= 0) {
             delete shopState.cart[cartKey];
@@ -816,7 +1115,6 @@
             shopState.cart[cartKey] = newQuantity;
         }
         
-        // Update UI states for the affected item
         const keyParts = cartKey.split('-');
         const itemId = keyParts[0];
         const size = keyParts[1];
@@ -833,9 +1131,8 @@
 
     window.removeCartItem = function(cartKey) {
         delete shopState.cart[cartKey];
-        showAlert("Mahsulot o'chirildi", 'info'); // MODIFIED: Call alert
+        showAlert("Mahsulot o'chirildi", 'info');
         
-        // Update UI states for the affected item
         const keyParts = cartKey.split('-');
         const itemId = keyParts[0];
         const size = keyParts[1];
@@ -850,7 +1147,6 @@
         shopState.syncCartState();
     };
 
-    // Helper function to update button state
     function updateButtonState(itemId) {
         const size = shopState.getCurrentSize(itemId);
         const gender = shopState.getCurrentGender(itemId);
@@ -859,7 +1155,6 @@
         const isInCart = shopState.isInCart(itemId, size, gender);
         
         if (isInCart) {
-            // Find update buttons and enable/disable them
             const cardUpdateBtn = document.querySelector(`#action-${itemId} button:last-child`);
             const modalUpdateBtn = document.querySelector(`#preview-action-buttons button:last-child`);
             
@@ -886,7 +1181,6 @@
         previewPrice.textContent = shopState.formatPrice(item.price);
         previewDescription.textContent = item.description || 'Mahsulot tavsifi mavjud emas.';
 
-        // Generate controls for the modal
         const currentSize = shopState.getCurrentSize(itemId);
         const currentGender = shopState.getCurrentGender(itemId);
         const currentQuantity = shopState.getCurrentQuantity(itemId);
@@ -901,13 +1195,13 @@
             
             sizeControlsHTML = `
                 <div class="dropdown">
-                        <button id="preview-size-button" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
-                            <span class="truncate">${currentSize}</span>
-                            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
-                        </button>
-                        <div class="dropdown-menu right w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                            <div class="py-1">${sizeMenuItemsHTML}</div>
-                        </div>
+                    <button id="preview-size-button" onclick="toggleModalDropdown(this)" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
+                        <span class="truncate">${currentSize}</span>
+                        <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
+                    </button>
+                    <div class="dropdown-menu">
+                        <div class="py-1">${sizeMenuItemsHTML}</div>
+                    </div>
                 </div>`;
         }
 
@@ -916,16 +1210,16 @@
             const genderText = currentGender === 'male' ? 'Erkak' : 'Ayol';
             genderControlsHTML = `
                 <div class="dropdown">
-                        <button id="preview-gender-button" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
-                            <span class="truncate">${genderText}</span>
-                            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
-                        </button>
-                        <div class="dropdown-menu right w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                            <div class="py-1">
-                                <a href="#" onclick="handleGenderSelection('${item.id}', 'male'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Erkak</a>
-                                <a href="#" onclick="handleGenderSelection('${item.id}', 'female'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ayol</a>
-                            </div>
+                    <button id="preview-gender-button" onclick="toggleModalDropdown(this)" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
+                        <span class="truncate">${genderText}</span>
+                        <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
+                    </button>
+                    <div class="dropdown-menu">
+                        <div class="py-1">
+                            <a href="#" onclick="handleGenderSelection('${item.id}', 'male'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Erkak</a>
+                            <a href="#" onclick="handleGenderSelection('${item.id}', 'female'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ayol</a>
                         </div>
+                    </div>
                 </div>`;
         }
         
@@ -945,10 +1239,33 @@
         `;
 
         imagePreviewModal.classList.remove('hidden');
-        setTimeout(() => imagePreviewModal.classList.add('visible'), 10); 
+        setTimeout(() => {
+            imagePreviewModal.classList.add('visible');
+        }, 50); 
+    };
+
+    // Simple function to toggle modal dropdowns
+    window.toggleModalDropdown = function(button) {
+        const dropdown = button.closest('.dropdown');
+        const menu = dropdown.querySelector('.dropdown-menu');
+        
+        // Close other modal dropdowns
+        document.querySelectorAll('#imagePreviewModal .dropdown-menu.show').forEach(otherMenu => {
+            if (otherMenu !== menu) {
+                otherMenu.classList.remove('show');
+            }
+        });
+        
+        // Toggle current dropdown
+        menu.classList.toggle('show');
     };
 
     window.closeImagePreview = function() {
+        // Close any open dropdowns in the modal
+        document.querySelectorAll('#imagePreviewModal .dropdown-menu.show').forEach(menu => {
+            menu.classList.remove('show');
+        });
+        
         imagePreviewModal.classList.remove('visible');
         setTimeout(() => {
             imagePreviewModal.classList.add('hidden');
@@ -987,7 +1304,7 @@
         })();
     };
 
-    // --- UI RENDERING ---
+    // --- UI Rendering ---
     function renderProducts() {
         if (Object.keys(shopState.products).length === 0) {
             container.innerHTML = `<p class="text-center text-gray-500 col-span-full">Hozirda mahsulotlar mavjud emas.</p>`;
@@ -1015,7 +1332,7 @@
                             <span class="truncate">${defaultSize}</span>
                             <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
                         </button>
-                        <div class="dropdown-menu right w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                        <div class="dropdown-menu">
                             <div class="py-1">${sizeMenuItemsHTML}</div>
                         </div>
                   </div>`;
@@ -1030,7 +1347,7 @@
                             <span class="truncate">Erkak</span>
                             <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
                         </button>
-                        <div class="dropdown-menu right w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                        <div class="dropdown-menu">
                             <div class="py-1">
                                 <a href="#" onclick="handleGenderSelection('${item.id}', 'male'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Erkak</a>
                                 <a href="#" onclick="handleGenderSelection('${item.id}', 'female'); event.preventDefault();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ayol</a>
@@ -1065,7 +1382,6 @@
 
         // Initialize default states and render actions for all products
         for (const item of Object.values(shopState.products)) {
-            // Initialize default states if not already set
             if (!shopState.selectedQuantities[item.id]) {
                 shopState.selectedQuantities[item.id] = 1;
             }
@@ -1081,37 +1397,38 @@
                 if (item.gender_neutral) {
                     shopState.selectedGenders[item.id] = null;
                 } else {
-                    shopState.selectedGenders[item.id] = 'male'; // default to male
+                    shopState.selectedGenders[item.id] = 'male';
                 }
             }
             
-            // Render initial actions and update UI
             shopState.renderProductActions(item.id);
             shopState.updateCardUI(item.id);
         }
     }
 
-    // --- EVENT LISTENERS ---
+    // --- Event Listeners ---
     document.getElementById('cartBtn').addEventListener('click', toggleCart);
     cartBackdrop.addEventListener('click', toggleCart);
 
-    // Close modal on escape key
+    // Close modal and dropdowns on escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const modal = document.getElementById('imagePreviewModal');
             if (modal && !modal.classList.contains('hidden')) {
                 closeImagePreview();
+                return;
             }
             
             if (!cartBackdrop.classList.contains('hidden')) {
                 toggleCart();
+                return;
             }
         }
     });
 
-    // --- INITIALIZATION ---
+    // --- Initialization ---
     document.addEventListener("DOMContentLoaded", () => {
-        // Initialize dropdowns
+        // Initialize enhanced dropdowns
         initDropdowns();
         
         // Initialize Telegram WebApp
@@ -1130,7 +1447,6 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Initialize shop state with server data
                 shopState.products = data.items || {};
                 shopState.cart = data.cart_items || {};
                 
@@ -1143,11 +1459,9 @@
                     }
                 }
                 
-                // Render products and sync cart state
                 renderProducts();
                 shopState.syncCartState();
             } else {
-                // Handle errors
                 if (data.detail === 'You have an incomplete order.') { 
                     window.location.href = "/errors/incomplete-order";
                 } else {
@@ -1177,11 +1491,9 @@
             `;
         })
         .finally(() => {
-            // Hide loader and show content
             loader.classList.add("hidden");
             container.classList.remove("hidden");
             
-            // Handle logo display
             const logoEl = document.getElementById('shop-logo');
             if (logoEl && logoEl.src && !logoEl.src.includes('None') && !logoEl.src.includes('null')) {
                 logoEl.style.display = 'block';
@@ -1192,7 +1504,7 @@
         });
     });
 
-    // --- PERFORMANCE OPTIMIZATIONS ---
+    // --- Performance Optimizations ---
     
     // Lazy loading for images
     if ('IntersectionObserver' in window) {
@@ -1207,7 +1519,6 @@
             });
         });
 
-        // Observer will be applied to images when they're created
         window.observeImage = (img) => imageObserver.observe(img);
     }
 
@@ -1221,20 +1532,33 @@
         lastTouchEnd = now;
     }, false);
 
-    // Add visual feedback for touch interactions
+    // Enhanced touch feedback for mobile
+    let touchStartElements = new Set();
+    
     document.addEventListener('touchstart', (e) => {
-        if (e.target.matches('button, .counter-btn, .product-card img')) {
+        if (e.target.matches('button, .counter-btn, .product-card img, .dropdown-button')) {
             e.target.style.transform = 'scale(0.95)';
+            e.target.style.transition = 'transform 0.1s ease';
+            touchStartElements.add(e.target);
         }
-    });
+    }, { passive: true });
 
     document.addEventListener('touchend', (e) => {
-        if (e.target.matches('button, .counter-btn, .product-card img')) {
-            setTimeout(() => {
-                e.target.style.transform = '';
-            }, 150);
-        }
-    });
+        touchStartElements.forEach(element => {
+            element.style.transform = '';
+            element.style.transition = '';
+        });
+        touchStartElements.clear();
+    }, { passive: true });
+
+    // Handle touch cancel events
+    document.addEventListener('touchcancel', (e) => {
+        touchStartElements.forEach(element => {
+            element.style.transform = '';
+            element.style.transition = '';
+        });
+        touchStartElements.clear();
+    }, { passive: true });
 
 </script>
 </body>
