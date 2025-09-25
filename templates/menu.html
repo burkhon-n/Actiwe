@@ -702,6 +702,7 @@
 
     // --- DROPDOWN FUNCTIONALITY ---
     function initDropdowns() {
+        // Use event delegation to handle dynamically created dropdowns
         document.addEventListener('click', (e) => {
             const dropdown = e.target.closest('.dropdown');
             const isDropdownButton = e.target.closest('.dropdown .dropdown-button');
@@ -736,6 +737,20 @@
                 document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
                     menu.classList.remove('show');
                 });
+            }
+        });
+        
+        // Handle dropdown menu item clicks (for dynamic content)
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.dropdown-menu a')) {
+                // Close dropdown after selection
+                const dropdown = e.target.closest('.dropdown');
+                if (dropdown) {
+                    const menu = dropdown.querySelector('.dropdown-menu');
+                    if (menu) {
+                        menu.classList.remove('show');
+                    }
+                }
             }
         });
     }
