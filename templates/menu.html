@@ -88,15 +88,7 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
     }
-    .product-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-    }
-    
-    /* Prevent hover transform when dropdown is open */
-    .product-card:has(.dropdown-menu.show):hover {
-      transform: translateY(-2px);
-    }
+    /* Hover effects removed for cleaner interface */
     
     .cart-badge {
       animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -116,11 +108,7 @@
       background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
       transition: all 0.3s ease;
     }
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(30, 64, 175, 0.3);
-    }
+    /* Hover effects removed for cleaner interface */
     .btn-primary:disabled {
       background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
       cursor: not-allowed;
@@ -140,10 +128,7 @@
     .counter-btn {
       transition: all 0.2s ease;
     }
-    .counter-btn:hover {
-      transform: scale(1.1);
-      background-color: #e5e7eb;
-    }
+    /* Hover effects removed for cleaner interface */
     .counter-btn:active {
       transform: scale(0.95);
     }
@@ -179,12 +164,10 @@
     .dropdown-button:hover {
       background: linear-gradient(145deg, #f9fafb 0%, #f3f4f6 100%);
       border-color: #d1d5db;
-      transform: translateY(-1px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
     }
     
     .dropdown-button:active {
-      transform: translateY(0px);
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
@@ -266,12 +249,10 @@
     .dropdown-item:hover {
       background: linear-gradient(145deg, #dbeafe 0%, #bfdbfe 100%);
       color: #1e40af;
-      transform: translateX(2px);
     }
     
     .dropdown-item:active {
       background: linear-gradient(145deg, #bfdbfe 0%, #93c5fd 100%);
-      transform: translateX(0px);
     }
     
     .dropdown-item.selected {
@@ -282,7 +263,6 @@
     
     .dropdown-item.selected:hover {
       background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 100%);
-      transform: translateX(0px);
     }
     
     /* Size-specific styling */
@@ -307,13 +287,7 @@
         font-size: 14px;
       }
       
-      .product-card:hover {
-        transform: translateY(-4px);
-      }
-      
-      .product-card:has(.dropdown-menu.show):hover {
-        transform: translateY(-1px);
-      }
+      /* Mobile hover effects removed for cleaner interface */
     }
     
     /* Modal-specific dropdown adjustments */
@@ -384,7 +358,7 @@
         <img src="{{ logo }}" alt="Shop Logo" id="shop-logo" style="display: none; height: 3.5rem;" />
     </div>
     <div class="flex-1 flex justify-end relative">
-      <button id="cartBtn" class="relative hover:scale-110 transition-transform duration-200 p-2 rounded-full hover:bg-white/20">
+      <button id="cartBtn" class="relative p-2 rounded-full">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-7 h-7 text-brand">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.293 2.293a1 1 0 00.707 1.707H19m-12 0a1 1 0 100 2 1 1 0 000-2zm12 0a1 1 0 100 2 1 1 0 000-2z" />
         </svg>
@@ -411,7 +385,7 @@
         <svg class="w-6 h-6 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.293 2.293a1 1 0 00.707 1.707H19m-12 0a1 1 0 100 2 1 1 0 000-2zm12 0a1 1 0 100 2 1 1 0 000-2z"></path></svg>
         Sizning savatingiz
       </h2>
-      <button onclick="toggleCart()" class="text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-2 rounded-full transition-all duration-200">
+      <button onclick="toggleCart()" class="text-gray-500 p-2 rounded-full">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
@@ -421,7 +395,7 @@
         <span class="font-bold text-xl text-gray-800">Jami:</span>
         <span id="cartTotal" class="font-black text-2xl text-brand">0 UZS</span>
       </div>
-      <button onclick="placeOrder()" id="orderBtn" class="w-full btn-primary text-white py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300">
+      <button onclick="placeOrder()" id="orderBtn" class="w-full btn-primary text-white py-4 rounded-xl font-bold text-lg shadow-xl">
         Buyurtma berish
       </button>
     </div>
@@ -435,7 +409,7 @@
       <div class="w-full md:w-1/2 p-6 flex flex-col">
         <div class="flex justify-between items-start mb-2">
           <h3 id="previewTitle" class="text-2xl font-bold text-gray-800"></h3>
-          <button class="text-gray-400 hover:text-gray-600" onclick="closeImagePreview()">
+          <button class="text-gray-400" onclick="closeImagePreview()">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
@@ -862,11 +836,11 @@
                 
                 return `
                     <div class="flex items-center gap-2">
-                        <button onclick="shopState.removeFromCart('${itemId}')" class="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl flex-1 transition-all duration-200">O'chirish</button>
-                        <button onclick="shopState.updateCartItem('${itemId}')" class="btn-primary text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl flex-1" ${cartQty === this.getCurrentQuantity(itemId) ? 'disabled style="opacity: 0.6; cursor: not-allowed;"' : ''}>Yangilash</button>
+                        <button onclick="shopState.removeFromCart('${itemId}')" class="bg-red-500 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg flex-1">O'chirish</button>
+                        <button onclick="shopState.updateCartItem('${itemId}')" class="btn-primary text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg flex-1" ${cartQty === this.getCurrentQuantity(itemId) ? 'disabled style="opacity: 0.6; cursor: not-allowed;"' : ''}>Yangilash</button>
                     </div>`;
             } else {
-                return `<button onclick="shopState.addToCart('${itemId}')" class="btn-primary w-full text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200">Savatga qo'shish</button>`;
+                return `<button onclick="shopState.addToCart('${itemId}')" class="btn-primary w-full text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg">Savatga qo'shish</button>`;
             }
         }
 
@@ -1239,7 +1213,7 @@
             productHTML += `
             <div class="product-card shadow-lg rounded-3xl flex flex-col animate-slide-up">
               <div class="rounded-t-3xl overflow-hidden">
-                <img src="${item.image}" alt="${item.title}" loading="lazy" class="w-full h-56 object-cover cursor-pointer hover:scale-105 transition-transform duration-300" onclick="openImagePreview('${item.id}')">
+                <img src="${item.image}" alt="${item.title}" loading="lazy" class="w-full h-56 object-cover cursor-pointer" onclick="openImagePreview('${item.id}')">
               </div>
               <div class="flex flex-col p-6 flex-grow">
                 <div class="flex justify-between items-start w-full mb-4">
