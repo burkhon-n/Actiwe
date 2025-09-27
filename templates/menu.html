@@ -148,37 +148,161 @@
       transform: scale(0.95);
     }
     
-    /* Select styling */
-    select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-      background-position: right 0.5rem center;
-      background-repeat: no-repeat;
-      background-size: 1.5em 1.5em;
-      padding-right: 2.5rem;
+    /* Custom Dropdown Styles */
+    .custom-dropdown {
+      position: relative;
+      display: inline-block;
     }
     
-    .dropdown-menu a:active {
-      background-color: #e5e7eb;
-    }
-    
-    /* Prevent text selection on dropdown buttons */
     .dropdown-button {
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 80px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       user-select: none;
       -webkit-user-select: none;
       -moz-user-select: none;
       -ms-user-select: none;
     }
     
+    .dropdown-button:hover {
+      background: linear-gradient(145deg, #f9fafb 0%, #f3f4f6 100%);
+      border-color: #d1d5db;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    }
+    
+    .dropdown-button:active {
+      transform: translateY(0px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dropdown-button.open {
+      background: linear-gradient(145deg, #dbeafe 0%, #bfdbfe 100%);
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .dropdown-arrow {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s ease;
+      color: #6b7280;
+    }
+    
+    .dropdown-button.open .dropdown-arrow {
+      transform: rotate(180deg);
+      color: #3b82f6;
+    }
+    
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      z-index: 1000;
+      margin-top: 4px;
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+      pointer-events: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(10px);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .dropdown-menu.show {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+      animation: dropdownEnter 0.2s ease-out;
+    }
+    
+    .dropdown-menu.hide {
+      animation: dropdownExit 0.15s ease-in forwards;
+    }
+    
+    .dropdown-item {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      border: none;
+      background: none;
+      text-align: left;
+      border-radius: 0;
+    }
+    
+    .dropdown-item:first-child {
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+    }
+    
+    .dropdown-item:last-child {
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+    }
+    
+    .dropdown-item:hover {
+      background: linear-gradient(145deg, #dbeafe 0%, #bfdbfe 100%);
+      color: #1e40af;
+      transform: translateX(2px);
+    }
+    
+    .dropdown-item:active {
+      background: linear-gradient(145deg, #bfdbfe 0%, #93c5fd 100%);
+      transform: translateX(0px);
+    }
+    
+    .dropdown-item.selected {
+      background: linear-gradient(145deg, #1e40af 0%, #3b82f6 100%);
+      color: white;
+      font-weight: 700;
+    }
+    
+    .dropdown-item.selected:hover {
+      background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 100%);
+      transform: translateX(0px);
+    }
+    
+    /* Size-specific styling */
+    .size-dropdown .dropdown-button {
+      min-width: 60px;
+    }
+    
+    .gender-dropdown .dropdown-button {
+      min-width: 80px;
+    }
+    
     /* Mobile-specific dropdown adjustments */
     @media (max-width: 768px) {
       .dropdown-menu {
         min-width: 140px;
-        max-height: 200px;
+        max-height: 180px;
         font-size: 14px;
       }
       
-      .dropdown-menu a {
+      .dropdown-item {
         padding: 10px 12px;
         font-size: 14px;
       }
@@ -194,11 +318,7 @@
     
     /* Modal-specific dropdown adjustments */
     #imagePreviewModal .dropdown-menu {
-      z-index: 10000;
-    }
-    
-    #imagePreviewModal .dropdown-menu.show {
-      pointer-events: auto;
+      z-index: 10001;
     }
     
     /* Scrollbar styling for dropdown */
@@ -226,7 +346,7 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
       }
       
-      .dropdown-menu a:hover {
+      .dropdown-item:hover {
         background-color: #000;
         color: #fff;
       }
@@ -238,9 +358,19 @@
       outline-offset: 2px;
     }
     
-    .dropdown-menu a:focus {
+    .dropdown-item:focus {
       outline: 2px solid #3b82f6;
       outline-offset: -2px;
+    }
+    
+    /* Animation for dropdown content changes */
+    .dropdown-content-change {
+      animation: contentChange 0.2s ease-in-out;
+    }
+    
+    @keyframes contentChange {
+      0% { transform: scale(0.98); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
@@ -371,6 +501,157 @@
             }
         }, 4000);
     }
+
+    // --- Enhanced Dropdown Functionality ---
+    function createCustomDropdown(id, options, selectedValue, onSelect, placeholder = 'Tanlash') {
+        const dropdownHTML = `
+            <div class="custom-dropdown ${id.includes('size') ? 'size-dropdown' : 'gender-dropdown'}" data-dropdown-id="${id}">
+                <button type="button" class="dropdown-button" onclick="toggleDropdown('${id}')" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="dropdown-text">${selectedValue || placeholder}</span>
+                    <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div class="dropdown-menu" role="listbox">
+                    ${options.map(option => 
+                        `<button type="button" class="dropdown-item ${option.value === selectedValue ? 'selected' : ''}" 
+                                onclick="selectDropdownOption('${id}', '${option.value}', '${option.label}')" 
+                                role="option" aria-selected="${option.value === selectedValue}">
+                            ${option.label}
+                        </button>`
+                    ).join('')}
+                </div>
+            </div>
+        `;
+        return dropdownHTML;
+    }
+
+    window.toggleDropdown = function(dropdownId) {
+        // Close all other dropdowns first
+        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+            if (!menu.closest(`[data-dropdown-id="${dropdownId}"]`)) {
+                closeDropdown(menu.closest('.custom-dropdown').dataset.dropdownId);
+            }
+        });
+
+        const dropdown = document.querySelector(`[data-dropdown-id="${dropdownId}"]`);
+        if (!dropdown) return;
+
+        const button = dropdown.querySelector('.dropdown-button');
+        const menu = dropdown.querySelector('.dropdown-menu');
+        
+        const isOpen = menu.classList.contains('show');
+        
+        if (isOpen) {
+            closeDropdown(dropdownId);
+        } else {
+            // Open dropdown
+            button.classList.add('open');
+            button.setAttribute('aria-expanded', 'true');
+            menu.classList.add('show');
+            
+            // Focus first item for keyboard navigation
+            const firstItem = menu.querySelector('.dropdown-item');
+            if (firstItem) firstItem.focus();
+        }
+    };
+
+    function closeDropdown(dropdownId) {
+        const dropdown = document.querySelector(`[data-dropdown-id="${dropdownId}"]`);
+        if (!dropdown) return;
+
+        const button = dropdown.querySelector('.dropdown-button');
+        const menu = dropdown.querySelector('.dropdown-menu');
+        
+        button.classList.remove('open');
+        button.setAttribute('aria-expanded', 'false');
+        menu.classList.add('hide');
+        
+        setTimeout(() => {
+            menu.classList.remove('show', 'hide');
+        }, 150);
+    }
+
+    window.selectDropdownOption = function(dropdownId, value, label) {
+        const dropdown = document.querySelector(`[data-dropdown-id="${dropdownId}"]`);
+        if (!dropdown) return;
+
+        const button = dropdown.querySelector('.dropdown-button');
+        const textSpan = button.querySelector('.dropdown-text');
+        const menu = dropdown.querySelector('.dropdown-menu');
+        
+        // Update selected state
+        menu.querySelectorAll('.dropdown-item').forEach(item => {
+            item.classList.remove('selected');
+            item.setAttribute('aria-selected', 'false');
+        });
+        
+        const selectedItem = menu.querySelector(`[onclick*="'${value}'"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('selected');
+            selectedItem.setAttribute('aria-selected', 'true');
+        }
+        
+        // Update button text with animation
+        textSpan.classList.add('dropdown-content-change');
+        textSpan.textContent = label;
+        setTimeout(() => textSpan.classList.remove('dropdown-content-change'), 200);
+        
+        // Close dropdown
+        closeDropdown(dropdownId);
+        
+        // Trigger change handler
+        const itemId = dropdownId.replace(/-(size|gender)-dropdown/, '');
+        if (dropdownId.includes('size')) {
+            shopState.setSize(itemId, value);
+        } else if (dropdownId.includes('gender')) {
+            shopState.setGender(itemId, value);
+        }
+    };
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.custom-dropdown')) {
+            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                const dropdownId = menu.closest('.custom-dropdown').dataset.dropdownId;
+                closeDropdown(dropdownId);
+            });
+        }
+    });
+
+    // Keyboard navigation for dropdowns
+    document.addEventListener('keydown', function(event) {
+        const activeDropdown = document.querySelector('.dropdown-menu.show');
+        if (!activeDropdown) return;
+        
+        const items = activeDropdown.querySelectorAll('.dropdown-item');
+        const currentFocus = document.activeElement;
+        const currentIndex = Array.from(items).indexOf(currentFocus);
+        
+        switch(event.key) {
+            case 'ArrowDown':
+                event.preventDefault();
+                const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                items[nextIndex].focus();
+                break;
+            case 'ArrowUp':
+                event.preventDefault();
+                const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                items[prevIndex].focus();
+                break;
+            case 'Enter':
+            case ' ':
+                event.preventDefault();
+                if (currentFocus && currentFocus.classList.contains('dropdown-item')) {
+                    currentFocus.click();
+                }
+                break;
+            case 'Escape':
+                const dropdownId = activeDropdown.closest('.custom-dropdown').dataset.dropdownId;
+                closeDropdown(dropdownId);
+                break;
+        }
+    });
 
     // --- Enhanced State Management ---
     class ShopState {
@@ -525,21 +806,15 @@
             const size = this.getCurrentSize(itemId);
             const gender = this.getCurrentGender(itemId);
 
+            // Update counter
             const cardCounter = document.getElementById(`counter-${itemId}`);
             if (cardCounter) cardCounter.textContent = quantity;
 
-            const cardSizeBtn = document.getElementById(`size-button-${itemId}`);
-            if (cardSizeBtn) {
-                const sizeSpan = cardSizeBtn.querySelector('span');
-                if (sizeSpan) sizeSpan.textContent = size;
-            }
-
-            const cardGenderBtn = document.getElementById(`gender-button-${itemId}`);
-            if (cardGenderBtn && gender) {
-                const genderSpan = cardGenderBtn.querySelector('span');
-                if (genderSpan) {
-                    genderSpan.textContent = gender === 'male' ? 'Erkak' : 'Ayol';
-                }
+            // Update dropdown displays
+            this.updateDropdownDisplay(`${itemId}-size-dropdown`, size);
+            if (gender) {
+                const genderLabel = gender === 'male' ? 'Erkak' : 'Ayol';
+                this.updateDropdownDisplay(`${itemId}-gender-dropdown`, genderLabel);
             }
         }
 
@@ -551,26 +826,28 @@
             const size = this.getCurrentSize(itemId);
             const gender = this.getCurrentGender(itemId);
 
+            // Update counter
             const previewCounter = document.getElementById('preview-counter');
             if (previewCounter) previewCounter.textContent = quantity;
 
-            const previewSizeBtn = document.getElementById('preview-size-button');
-            if (previewSizeBtn) {
-                const sizeSpan = previewSizeBtn.querySelector('span');
-                if (sizeSpan) sizeSpan.textContent = size;
-            }
-
-            const previewGenderBtn = document.getElementById('preview-gender-button');
-            if (previewGenderBtn && gender) {
-                const genderSpan = previewGenderBtn.querySelector('span');
-                if (genderSpan) {
-                    genderSpan.textContent = gender === 'male' ? 'Erkak' : 'Ayol';
-                }
+            // Update dropdown displays
+            this.updateDropdownDisplay(`preview-${itemId}-size-dropdown`, size);
+            if (gender) {
+                const genderLabel = gender === 'male' ? 'Erkak' : 'Ayol';
+                this.updateDropdownDisplay(`preview-${itemId}-gender-dropdown`, genderLabel);
             }
 
             const previewActionDiv = document.getElementById('preview-action-buttons');
             if (previewActionDiv) {
                 previewActionDiv.innerHTML = this.generateActionButtons(itemId);
+            }
+        }
+
+        updateDropdownDisplay(dropdownId, value) {
+            const dropdown = document.querySelector(`[data-dropdown-id="${dropdownId}"]`);
+            if (dropdown) {
+                const textSpan = dropdown.querySelector('.dropdown-text');
+                if (textSpan) textSpan.textContent = value;
             }
         }
 
@@ -728,21 +1005,10 @@
     const previewDescription = document.getElementById('previewDescription');
     const previewControls = document.getElementById('previewControls');
 
-    // --- Enhanced Dropdown Functionality ---
-    // Dropdown functions removed - now using simple select elements
-
     // --- Global Functions ---
     window.toggleCart = function() {
         cartDrawer.classList.toggle('translate-x-full');
         cartBackdrop.classList.toggle('hidden');
-    };
-
-    window.handleSizeChange = function(itemId, selectElement) {
-        shopState.setSize(itemId, selectElement.value);
-    };
-
-    window.handleGenderChange = function(itemId, selectElement) {
-        shopState.setGender(itemId, selectElement.value);
     };
 
     window.increaseQuantity = function(itemId) {
@@ -833,23 +1099,31 @@
         let sizeControlsHTML = '';
         if (item.sizes !== '0') {
             const sizes = item.sizes.split(',').map(s => s.trim());
-            const sizeOptionsHTML = sizes.map(size => 
-                `<option value="${size}" ${size === currentSize ? 'selected' : ''}>${size}</option>`
-            ).join('');
-            
-            sizeControlsHTML = `
-                <select id="preview-size-select" onchange="handleSizeChange('${item.id}', this)" class="px-3 py-2 text-sm rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent">
-                    ${sizeOptionsHTML}
-                </select>`;
+            const sizeOptions = sizes.map(size => ({
+                value: size,
+                label: size
+            }));
+            sizeControlsHTML = createCustomDropdown(
+                `preview-${itemId}-size-dropdown`, 
+                sizeOptions, 
+                currentSize, 
+                (value) => shopState.setSize(itemId, value)
+            );
         }
 
         let genderControlsHTML = '';
         if (!item.gender_neutral) {
-            genderControlsHTML = `
-                <select id="preview-gender-select" onchange="handleGenderChange('${item.id}', this)" class="px-3 py-2 text-sm rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent">
-                    <option value="male" ${currentGender === 'male' ? 'selected' : ''}>Erkak</option>
-                    <option value="female" ${currentGender === 'female' ? 'selected' : ''}>Ayol</option>
-                </select>`;
+            const genderOptions = [
+                { value: 'male', label: 'Erkak' },
+                { value: 'female', label: 'Ayol' }
+            ];
+            const currentGenderLabel = currentGender === 'male' ? 'Erkak' : 'Ayol';
+            genderControlsHTML = createCustomDropdown(
+                `preview-${itemId}-gender-dropdown`, 
+                genderOptions, 
+                currentGenderLabel, 
+                (value) => shopState.setGender(itemId, value)
+            );
         }
         
         const hasControls = item.sizes !== '0' || !item.gender_neutral;
@@ -875,7 +1149,8 @@
 
     window.closeImagePreview = function() {
         document.querySelectorAll('#imagePreviewModal .dropdown-menu.show').forEach(menu => {
-            menu.classList.remove('show');
+            const dropdownId = menu.closest('.custom-dropdown').dataset.dropdownId;
+            closeDropdown(dropdownId);
         });
         
         imagePreviewModal.classList.remove('visible');
@@ -933,24 +1208,32 @@
                 const sizes = item.sizes.split(',').map(s => s.trim());
                 defaultSize = sizes[0] || 'N/A';
                 
-                const sizeOptionsHTML = sizes.map(size => 
-                    `<option value="${size}" ${size === defaultSize ? 'selected' : ''}>${size}</option>`
-                ).join('');
+                const sizeOptions = sizes.map(size => ({
+                    value: size,
+                    label: size
+                }));
 
-                sizeControlsHTML = `
-                    <select id="size-select-${item.id}" onchange="handleSizeChange('${item.id}', this)" class="px-3 py-2 text-sm rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent">
-                        ${sizeOptionsHTML}
-                    </select>`;
+                sizeControlsHTML = createCustomDropdown(
+                    `${item.id}-size-dropdown`, 
+                    sizeOptions, 
+                    defaultSize, 
+                    (value) => shopState.setSize(item.id, value)
+                );
             } else {
                 defaultSize = 'N/A';
             }
 
             if (!item.gender_neutral) {
-                genderControlsHTML = `
-                    <select id="gender-select-${item.id}" onchange="handleGenderChange('${item.id}', this)" class="px-3 py-2 text-sm rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent">
-                        <option value="male" selected>Erkak</option>
-                        <option value="female">Ayol</option>
-                    </select>`;
+                const genderOptions = [
+                    { value: 'male', label: 'Erkak' },
+                    { value: 'female', label: 'Ayol' }
+                ];
+                genderControlsHTML = createCustomDropdown(
+                    `${item.id}-gender-dropdown`, 
+                    genderOptions, 
+                    'Erkak', 
+                    (value) => shopState.setGender(item.id, value)
+                );
             }
 
             productHTML += `
