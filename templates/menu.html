@@ -148,84 +148,14 @@
       transform: scale(0.95);
     }
     
-    /* Enhanced Dropdown System */
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
-    
-    .dropdown-button {
-      position: relative;
-      z-index: 1;
-    }
-    
-    .dropdown-menu {
-      position: absolute;
-      z-index: 9999;
-      top: calc(100% + 4px);
-      right: 0;
-      min-width: 160px;
-      max-width: 200px;
-      max-height: 240px;
-      overflow-y: auto;
-      background: white;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      opacity: 0;
-      visibility: hidden;
-      transform: scale(0.95) translateY(-10px);
-      transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0.2s;
-      transform-origin: top right;
-      pointer-events: none;
-    }
-    
-    .dropdown-menu.left {
-      right: auto;
-      left: 0;
-      transform-origin: top left;
-    }
-    
-    .dropdown-menu.center {
-      right: auto;
-      left: 50%;
-      transform: translateX(-50%) scale(0.95) translateY(-10px);
-      transform-origin: top center;
-    }
-    
-    .dropdown-menu.center.show {
-      transform: translateX(-50%) scale(1) translateY(0);
-      pointer-events: auto;
-    }
-    
-    .dropdown-menu.show {
-      opacity: 1;
-      visibility: visible;
-      transform: scale(1) translateY(0);
-      animation: dropdown-enter 0.2s ease-out;
-      pointer-events: auto;
-    }
-    
-    .dropdown-menu.hiding {
-      animation: dropdown-exit 0.15s ease-in forwards;
-    }
-    
-    .dropdown-menu a {
-      display: block;
-      padding: 8px 12px;
-      color: #374151;
-      text-decoration: none;
-      font-size: 14px;
-      transition: background-color 0.15s ease;
-      border-radius: 4px;
-      margin: 2px 4px;
-    }
-    
-    .dropdown-menu a:hover,
-    .dropdown-menu a:focus {
-      background-color: #f3f4f6;
-      color: #1f2937;
-      outline: none;
+    /* Select styling */
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.5rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 2.5rem;
     }
     
     .dropdown-menu a:active {
@@ -799,176 +729,7 @@
     const previewControls = document.getElementById('previewControls');
 
     // --- Enhanced Dropdown Functionality ---
-    function initDropdowns() {
-        // Global click handler for all dropdowns
-        document.addEventListener('click', (e) => {
-            const dropdownButton = e.target.closest('.dropdown-button');
-            const dropdown = e.target.closest('.dropdown');
-            
-            // If a dropdown button was clicked
-            if (dropdownButton && dropdown) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const menu = dropdown.querySelector('.dropdown-menu');
-                if (!menu) return;
-                
-                const isAlreadyOpen = menu.classList.contains('show');
-
-                // Close all other dropdowns first
-                document.querySelectorAll('.dropdown-menu.show').forEach(otherMenu => {
-                    if (otherMenu !== menu) {
-                        closeDropdown(otherMenu);
-                    }
-                });
-                
-                // Toggle current dropdown
-                if (isAlreadyOpen) {
-                    closeDropdown(menu);
-                } else {
-                    // Position the dropdown before showing
-                    if (dropdown.closest('#imagePreviewModal')) {
-                        positionModalDropdown(dropdown);
-                    } else {
-                        positionDropdown(dropdown);
-                    }
-                    
-                    menu.classList.add('show');
-                    
-                    // Focus management for accessibility
-                    const firstLink = menu.querySelector('a');
-                    if (firstLink) {
-                        setTimeout(() => firstLink.focus(), 100);
-                    }
-                }
-            } else if (!e.target.closest('.dropdown-menu')) {
-                // If the click was outside any dropdown menu, close all of them
-                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                    closeDropdown(menu);
-                });
-            }
-        });
-        
-        // Handle dropdown menu item clicks to ensure they close the menu
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('.dropdown-menu a')) {
-                const menu = e.target.closest('.dropdown-menu');
-                if (menu) {
-                    closeDropdown(menu);
-                }
-            }
-        });
-        
-        // Dynamic positioning for dropdowns on the main page
-        function positionDropdown(dropdown) {
-            const menu = dropdown.querySelector('.dropdown-menu');
-            if (!menu) return;
-            
-            const button = dropdown.querySelector('.dropdown-button');
-            const rect = button.getBoundingClientRect();
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-            
-            menu.classList.remove('left', 'right', 'center');
-            Object.assign(menu.style, { maxHeight: '', top: '', bottom: '', marginTop: '', marginBottom: '' });
-
-            // Horizontal positioning
-            const menuWidth = 160;
-            if ((viewportWidth - rect.right) >= menuWidth) {
-                menu.classList.add('right');
-            } else if (rect.left >= menuWidth) {
-                menu.classList.add('left');
-            } else {
-                menu.classList.add('center');
-            }
-            
-            // Vertical positioning (opens up if not enough space below)
-            const spaceBelow = viewportHeight - rect.bottom - 10;
-            const spaceAbove = rect.top - 10;
-            
-            if (spaceBelow < 200 && spaceAbove > spaceBelow) {
-                Object.assign(menu.style, { top: 'auto', bottom: '100%', marginBottom: '4px', maxHeight: `${Math.min(spaceAbove, 240)}px` });
-            } else {
-                Object.assign(menu.style, { top: 'calc(100% + 4px)', bottom: 'auto', maxHeight: `${Math.min(spaceBelow, 240)}px` });
-            }
-        }
-        
-        // Simpler positioning for dropdowns inside the modal
-        function positionModalDropdown(dropdown) {
-            const menu = dropdown.querySelector('.dropdown-menu');
-            if (!menu) return;
-            
-            Object.assign(menu.style, { top: 'calc(100% + 4px)', bottom: 'auto', maxHeight: '200px' });
-        }
-        
-        // Close dropdown with exit animation
-        function closeDropdown(menu) {
-            if (!menu || !menu.classList.contains('show')) return;
-            
-            menu.classList.add('hiding');
-            menu.classList.remove('show');
-            
-            setTimeout(() => {
-                menu.classList.remove('hiding');
-            }, 150);
-        }
-        
-        // Keyboard navigation for accessibility
-        document.addEventListener('keydown', (e) => {
-            const activeDropdown = document.querySelector('.dropdown-menu.show');
-            if (!activeDropdown) return;
-            
-            const links = Array.from(activeDropdown.querySelectorAll('a'));
-            if (links.length === 0) return;
-            
-            const currentFocus = document.activeElement;
-            const currentIndex = links.indexOf(currentFocus);
-            
-            switch (e.key) {
-                case 'Escape':
-                    e.preventDefault();
-                    const button = activeDropdown.closest('.dropdown')?.querySelector('.dropdown-button');
-                    closeDropdown(activeDropdown);
-                    button?.focus();
-                    break;
-                    
-                case 'ArrowDown':
-                    e.preventDefault();
-                    const nextIndex = currentIndex < links.length - 1 ? currentIndex + 1 : 0;
-                    links[nextIndex]?.focus();
-                    break;
-                    
-                case 'ArrowUp':
-                    e.preventDefault();
-                    const prevIndex = currentIndex > 0 ? currentIndex - 1 : links.length - 1;
-                    links[prevIndex]?.focus();
-                    break;
-            }
-        });
-        
-        // Reposition dropdowns on window resize/scroll
-        const repositionOpenDropdowns = () => {
-            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                const dropdown = menu.closest('.dropdown');
-                if (dropdown) {
-                    if (dropdown.closest('#imagePreviewModal')) {
-                        positionModalDropdown(dropdown);
-                    } else {
-                        positionDropdown(dropdown);
-                    }
-                }
-            });
-        };
-        
-        let eventTimeout;
-        const debouncedReposition = () => {
-            clearTimeout(eventTimeout);
-            eventTimeout = setTimeout(repositionOpenDropdowns, 50);
-        };
-        
-        window.addEventListener('resize', debouncedReposition);
-        window.addEventListener('scroll', debouncedReposition, { passive: true });
-    }
+    // Dropdown functions removed - now using simple select elements
 
     // --- Global Functions ---
     window.toggleCart = function() {
@@ -976,12 +737,12 @@
         cartBackdrop.classList.toggle('hidden');
     };
 
-    window.handleSizeSelection = function(itemId, size) {
-        shopState.setSize(itemId, size);
+    window.handleSizeChange = function(itemId, selectElement) {
+        shopState.setSize(itemId, selectElement.value);
     };
 
-    window.handleGenderSelection = function(itemId, gender) {
-        shopState.setGender(itemId, gender);
+    window.handleGenderChange = function(itemId, selectElement) {
+        shopState.setGender(itemId, selectElement.value);
     };
 
     window.increaseQuantity = function(itemId) {
@@ -1072,34 +833,23 @@
         let sizeControlsHTML = '';
         if (item.sizes !== '0') {
             const sizes = item.sizes.split(',').map(s => s.trim());
-            const sizeMenuItemsHTML = sizes.map(size => 
-                `<a href="#" onclick="handleSizeSelection('${item.id}', '${size}'); event.preventDefault();">${size}</a>`
+            const sizeOptionsHTML = sizes.map(size => 
+                `<option value="${size}" ${size === currentSize ? 'selected' : ''}>${size}</option>`
             ).join('');
             
             sizeControlsHTML = `
-                <div class="dropdown">
-                    <button id="preview-size-button" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
-                        <span class="truncate">${currentSize}</span>
-                        <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
-                    </button>
-                    <div class="dropdown-menu">${sizeMenuItemsHTML}</div>
-                </div>`;
+                <select id="preview-size-select" onchange="handleSizeChange('${item.id}', this)" class="px-3 py-2 text-sm rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent">
+                    ${sizeOptionsHTML}
+                </select>`;
         }
 
         let genderControlsHTML = '';
         if (!item.gender_neutral) {
-            const genderText = currentGender === 'male' ? 'Erkak' : 'Ayol';
             genderControlsHTML = `
-                <div class="dropdown">
-                    <button id="preview-gender-button" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">
-                        <span class="truncate">${genderText}</span>
-                        <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
-                    </button>
-                    <div class="dropdown-menu">
-                        <a href="#" onclick="handleGenderSelection('${item.id}', 'male'); event.preventDefault();">Erkak</a>
-                        <a href="#" onclick="handleGenderSelection('${item.id}', 'female'); event.preventDefault();">Ayol</a>
-                    </div>
-                </div>`;
+                <select id="preview-gender-select" onchange="handleGenderChange('${item.id}', this)" class="px-3 py-2 text-sm rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent">
+                    <option value="male" ${currentGender === 'male' ? 'selected' : ''}>Erkak</option>
+                    <option value="female" ${currentGender === 'female' ? 'selected' : ''}>Ayol</option>
+                </select>`;
         }
         
         const hasControls = item.sizes !== '0' || !item.gender_neutral;
@@ -1183,34 +933,24 @@
                 const sizes = item.sizes.split(',').map(s => s.trim());
                 defaultSize = sizes[0] || 'N/A';
                 
-                const sizeMenuItemsHTML = sizes.map(size => 
-                    `<a href="#" onclick="handleSizeSelection('${item.id}', '${size}'); event.preventDefault();">${size}</a>`
+                const sizeOptionsHTML = sizes.map(size => 
+                    `<option value="${size}" ${size === defaultSize ? 'selected' : ''}>${size}</option>`
                 ).join('');
 
                 sizeControlsHTML = `
-                    <div class="dropdown">
-                        <button id="size-button-${item.id}" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 transition-colors duration-200">
-                            <span class="truncate">${defaultSize}</span>
-                            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
-                        </button>
-                        <div class="dropdown-menu">${sizeMenuItemsHTML}</div>
-                    </div>`;
+                    <select id="size-select-${item.id}" onchange="handleSizeChange('${item.id}', this)" class="px-3 py-2 text-sm rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent">
+                        ${sizeOptionsHTML}
+                    </select>`;
             } else {
                 defaultSize = 'N/A';
             }
 
             if (!item.gender_neutral) {
                 genderControlsHTML = `
-                    <div class="dropdown">
-                        <button id="gender-button-${item.id}" class="dropdown-button inline-flex w-full items-center justify-center gap-x-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 transition-colors duration-200">
-                            <span class="truncate">Erkak</span>
-                            <svg viewBox="0 0 20 20" fill="currentColor" class="-mr-1 h-5 w-5 text-gray-500"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" /></svg>
-                        </button>
-                        <div class="dropdown-menu">
-                            <a href="#" onclick="handleGenderSelection('${item.id}', 'male'); event.preventDefault();">Erkak</a>
-                            <a href="#" onclick="handleGenderSelection('${item.id}', 'female'); event.preventDefault();">Ayol</a>
-                        </div>
-                    </div>`;
+                    <select id="gender-select-${item.id}" onchange="handleGenderChange('${item.id}', this)" class="px-3 py-2 text-sm rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent">
+                        <option value="male" selected>Erkak</option>
+                        <option value="female">Ayol</option>
+                    </select>`;
             }
 
             productHTML += `
@@ -1274,8 +1014,6 @@
 
     // --- Initialization ---
     document.addEventListener("DOMContentLoaded", () => {
-        initDropdowns();
-        
         if (window.Telegram?.WebApp) {
             window.Telegram.WebApp.ready();
         }
