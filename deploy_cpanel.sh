@@ -31,23 +31,13 @@ set_permissions() {
     chmod 600 .env 2>/dev/null || echo "⚠️  .env file not found"
     
     # Set permissions for static files
-    if [ -d "static" ]; then
-        chmod -R 644 static/ 2>/dev/null || echo "⚠️  Could not set static file permissions"
-        chmod 755 static/ 2>/dev/null || echo "⚠️  Could not set static directory permissions"
-        chmod 755 static/uploads/ 2>/dev/null || echo "⚠️  Could not set uploads directory permissions"
-        echo "✅ Static file permissions set"
-    else
-        echo "⚠️  static directory not found"
-    fi
+    chmod -R 644 static/ 2>/dev/null || echo "⚠️  static directory not found"
+    chmod 755 static/ 2>/dev/null || echo "⚠️  static directory not found"
+    chmod 755 static/uploads/ 2>/dev/null || echo "⚠️  uploads directory not found"
     
     # Set permissions for templates
-    if [ -d "templates" ]; then
-        chmod -R 644 templates/ 2>/dev/null || echo "⚠️  Could not set template file permissions"
-        find templates/ -type d -exec chmod 755 {} \; 2>/dev/null || echo "⚠️  Could not set template directory permissions"
-        echo "✅ Template permissions set"
-    else
-        echo "⚠️  templates directory not found"
-    fi
+    chmod -R 644 templates/ 2>/dev/null || echo "⚠️  templates directory not found"
+    find templates/ -type d -exec chmod 755 {} \; 2>/dev/null || echo "⚠️  templates directory not found"
     
     echo "✅ File permissions set successfully"
 }
@@ -79,16 +69,7 @@ check_dependencies() {
     
     if [ -f "requirements.txt" ]; then
         echo "📋 Installing/updating dependencies..."
-        
-        # Check if we're in a virtual environment
-        if [ -n "$VIRTUAL_ENV" ]; then
-            echo "🔧 Installing in virtual environment..."
-            pip install -r requirements.txt
-        else
-            echo "🔧 Installing with --user flag..."
-            pip install --user -r requirements.txt
-        fi
-        
+        pip install --user -r requirements.txt
         if [ $? -eq 0 ]; then
             echo "✅ Dependencies installed successfully"
         else
