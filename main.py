@@ -28,16 +28,24 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.calls = calls
         self.period = period
         self.clients = {}
+        self.last_cleanup = time.time()
+        self.cleanup_interval = 30  # Cleanup every 30 seconds instead of every request
     
     async def dispatch(self, request: Request, call_next):
+        # Skip rate limiting for webhook endpoints to ensure fast response
+        if request.url.path.startswith(("/webhook", "/health")):
+            return await call_next(request)
+            
         client_ip = request.client.host
         current_time = time.time()
         
-        # Clean old entries
-        self.clients = {
-            ip: (count, timestamp) for ip, (count, timestamp) in self.clients.items()
-            if current_time - timestamp < self.period
-        }
+        # Only cleanup periodically, not on every request
+        if current_time - self.last_cleanup > self.cleanup_interval:
+            self.clients = {
+                ip: (count, timestamp) for ip, (count, timestamp) in self.clients.items()
+                if current_time - timestamp < self.period
+            }
+            self.last_cleanup = current_time
         
         # Check rate limit
         if client_ip in self.clients:
@@ -88,19 +96,23 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
         
-        # Log request
-        logger.info(f"Request: {request.method} {request.url.path} - IP: {request.client.host}")
+        # Only log non-health check requests to reduce noise
+        should_log = not request.url.path.startswith(("/health", "/webhook"))
+        
+        if should_log:
+            logger.info(f"Request: {request.method} {request.url.path} - IP: {request.client.host}")
         
         try:
             response = await call_next(request)
             process_time = time.time() - start_time
             
-            # Log response
-            logger.info(
-                f"Response: {response.status_code} - "
-                f"Time: {process_time:.4f}s - "
-                f"Path: {request.url.path}"
-            )
+            # Log slow requests or errors
+            if should_log and (process_time > 1.0 or response.status_code >= 400):
+                logger.info(
+                    f"Response: {response.status_code} - "
+                    f"Time: {process_time:.4f}s - "
+                    f"Path: {request.url.path}"
+                )
             
             response.headers["X-Process-Time"] = str(process_time)
             return response
@@ -255,12 +267,14 @@ async def webhook_handler(request: Request):
     """Handle incoming Telegram webhook updates."""
     try:
         json_data = await request.json()
-        update = Update.de_json(json_data)
         
-        # Process update asynchronously to avoid blocking
-        asyncio.create_task(bot.process_new_updates([update]))
+        # Respond immediately to Telegram to avoid timeout
+        response = JSONResponse(content={"status": "ok"})
         
-        return {"status": "ok"}
+        # Process update asynchronously without waiting
+        asyncio.create_task(process_webhook_update(json_data))
+        
+        return response
         
     except Exception as e:
         logger.error(f"Error processing webhook update: {e}")
@@ -268,6 +282,14 @@ async def webhook_handler(request: Request):
             status_code=200,  # Always return 200 to avoid Telegram retries
             content={"status": "error", "message": str(e)}
         )
+
+async def process_webhook_update(json_data: dict):
+    """Process webhook update in background."""
+    try:
+        update = Update.de_json(json_data)
+        await bot.process_new_updates([update])
+    except Exception as e:
+        logger.error(f"Error in background webhook processing: {e}")
 
 # --- Root Endpoint ---
 @app.get("/", response_class=HTMLResponse)
