@@ -11,6 +11,14 @@ from telebot.types import (
 )
 from telebot.apihelper import ApiTelegramException
 from config import TOKEN, URL, CHANNEL_ID, SADMIN, logger
+
+# Validate CHANNEL_ID format
+try:
+    CHANNEL_ID_INT = int(CHANNEL_ID)
+    logger.info(f"CHANNEL_ID validated: {CHANNEL_ID_INT}")
+except (ValueError, TypeError):
+    logger.error(f"Invalid CHANNEL_ID format: {CHANNEL_ID}")
+    raise ValueError(f"CHANNEL_ID must be a valid integer, got: {CHANNEL_ID}")
 from models import Item, Order, User, Admin
 from database import get_db, DatabaseSessionManager
 
@@ -104,16 +112,45 @@ async def send_confirmation(chat_id: int, order: Order):
             logger.error(f"Invalid location format for order {order.id}: {order.location}")
             await bot.send_message(
                 chat_id,
-                "❌ Joylashuv ma'lumotlari noto'g'ri. Iltimos, qayta urinib ko'ring.",
+                "❌ Joylashuv ma'lumotlari noto'g'ri. Iltimos, joylashuvni qayta yuboring.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            # Ask for location again
+            await ask_for_location(chat_id)
+            return
+        
+        try:
+            lat, lon = map(float, order.location.split(","))
+            
+            # Validate latitude and longitude ranges
+            if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+                raise ValueError("Invalid coordinate ranges")
+                
+        except (ValueError, TypeError) as e:
+            logger.error(f"Error parsing location for order {order.id}: {e}")
+            await bot.send_message(
+                chat_id,
+                "❌ Joylashuv ma'lumotlari noto'g'ri formatda. Iltimos, joylashuvni qayta yuboring.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            await ask_for_location(chat_id)
+            return
+        
+        # Send location preview
+        try:
+            location_msg = await bot.send_location(
+                chat_id, latitude=lat, longitude=lon, reply_markup=ReplyKeyboardRemove()
+            )
+        except ApiTelegramException as e:
+            logger.error(f"Failed to send location preview for order {order.id}: {e}")
+            await bot.send_message(
+                chat_id,
+                "❌ Joylashuvni ko'rsatishda xatolik. Iltimos, qayta urinib ko'ring.",
                 reply_markup=ReplyKeyboardRemove()
             )
             return
-        
-        lat, lon = map(float, order.location.split(","))
-        location_msg = await bot.send_location(
-            chat_id, latitude=lat, longitude=lon, reply_markup=ReplyKeyboardRemove()
-        )
 
+        # Create confirmation keyboard
         kb = InlineKeyboardMarkup()
         kb.row(
             InlineKeyboardButton("👤 Ismni O'zgartirish", callback_data=f"change_name_{order.id}"),
@@ -127,33 +164,44 @@ async def send_confirmation(chat_id: int, order: Order):
             InlineKeyboardButton("❌ Bekor Qilish", callback_data=f"cancel_order_{order.id}")
         )
 
-        await bot.send_message(
-            chat_id,
-            f"<b>Ma'lumotlaringizni tasdiqlang:</b>\n\n"
-            f"👤 <b>Ism:</b> <code>{order.user_name}</code>\n"
-            f"☎️ <b>Telefon:</b> <code>{order.user_phone}</code>\n",
-            reply_to_message_id=location_msg.message_id,
-            reply_markup=kb
-        )
+        # Send confirmation message
+        try:
+            await bot.send_message(
+                chat_id,
+                f"<b>Ma'lumotlaringizni tasdiqlang:</b>\n\n"
+                f"👤 <b>Ism:</b> <code>{order.user_name}</code>\n"
+                f"☎️ <b>Telefon:</b> <code>{order.user_phone}</code>\n\n"
+                f"<i>Yuqoridagi joylashuv to'g'ri bo'lsa, \"Tasdiqlash\" tugmasini bosing.</i>",
+                reply_to_message_id=location_msg.message_id,
+                reply_markup=kb,
+                parse_mode='HTML'
+            )
+            logger.info(f"Confirmation sent for order {order.id}")
+            
+        except ApiTelegramException as e:
+            logger.error(f"Failed to send confirmation message for order {order.id}: {e}")
+            await bot.send_message(
+                chat_id,
+                "❌ Tasdiqlash xabarini yuborishda xatolik. Iltimos, qayta urinib ko'ring.",
+                reply_markup=ReplyKeyboardRemove()
+            )
         
-    except (ValueError, TypeError) as e:
-        logger.error(f"Error parsing location for order {order.id}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error in send_confirmation for order {order.id}: {e}")
+        logger.error(traceback.format_exc())
         await bot.send_message(
             chat_id,
-            "❌ Joylashuv ma'lumotlari noto'g'ri. Iltimos, qayta urinib ko'ring.",
+            "❌ Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.\n"
+            "Agar muammo davom etsa, /start tugmasini bosing.",
             reply_markup=ReplyKeyboardRemove()
         )
-    except ApiTelegramException as e:
-        logger.error(f"Failed to send confirmation (chat_id: {chat_id}, order_id: {order.id}): {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error in send_confirmation: {e}")
-        logger.error(traceback.format_exc())
 
 async def update_and_continue(chat_id: int, db, order: Order):
     """Continue order process based on missing fields."""
     try:
         # Commit changes to the database before proceeding
         db.commit()
+        logger.info(f"Order {order.id} updated for user {chat_id}")
         
         if not order.user_name:
             await ask_for_name(chat_id)
@@ -164,10 +212,12 @@ async def update_and_continue(chat_id: int, db, order: Order):
         else:
             await send_confirmation(chat_id, order)
     except Exception as e:
-        logger.error(f"Error in update_and_continue for user {chat_id}: {e}")
+        logger.error(f"Error in update_and_continue for user {chat_id}, order {order.id}: {e}")
+        logger.error(traceback.format_exc())
         await bot.send_message(
             chat_id,
-            "❌ Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.",
+            "❌ Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.\n"
+            "Agar muammo davom etsa, /start tugmasini bosing.",
             reply_markup=ReplyKeyboardRemove()
         )
 
@@ -718,6 +768,11 @@ async def process_order_confirmation(chat_id: int, order: Order, db):
             await bot.send_message(chat_id, "❌ Buyurtma ma'lumotlarida xatolik. Iltimos, qayta urinib ko'ring.")
             return
             
+        if not order_items:
+            logger.error(f"Empty order items for order {order.id}")
+            await bot.send_message(chat_id, "❌ Buyurtma bo'sh. Iltimos, mahsulot qo'shing.")
+            return
+            
         total = 0
         item_count = 0
         
@@ -729,63 +784,99 @@ async def process_order_confirmation(chat_id: int, order: Order, db):
             if len(key_parts) < 2:
                 logger.error(f"Invalid item key format: {key}")
                 continue
-                
-            item_id = int(key_parts[0])
-            size = key_parts[1]
-            gender = key_parts[2] if len(key_parts) > 2 else None
             
-            item = Item.get(db, item_id)
-            if not item:
-                logger.error(f"Item not found: {item_id}")
+            try:
+                item_id = int(key_parts[0])
+                size = key_parts[1] if key_parts[1] != 'N/A' else 'Universal'
+                gender = key_parts[2] if len(key_parts) > 2 and key_parts[2] else None
+                
+                item = Item.get(db, item_id)
+                if not item:
+                    logger.error(f"Item not found: {item_id}")
+                    continue
+                    
+                # Ensure quantity is valid
+                quantity = int(quantity)
+                if quantity <= 0:
+                    logger.error(f"Invalid quantity for item {item_id}: {quantity}")
+                    continue
+                    
+                subtotal = int(item.price) * quantity
+                
+                text += f"<b>{item_count}. {item.title}</b>\n"
+                text += f"   📏 <b>O'lcham:</b> {size}\n"
+                if gender:
+                    gender_text = "Erkak" if gender == "male" else "Ayol" if gender == "female" else gender
+                    text += f"   👫 <b>Jins:</b> {gender_text}\n"
+                text += f"   📦 <b>Soni:</b> {quantity} ta\n"
+                text += f"   💰 <b>Narxi:</b> {subtotal:,} UZS\n\n"
+                total += subtotal
+                
+            except (ValueError, IndexError) as e:
+                logger.error(f"Error processing item {key}: {e}")
                 continue
-                
-            subtotal = int(item.price) * int(quantity)
             
-            text += f"<b>{item_count}. {item.title}</b>\n"
-            text += f"   📏 <b>O'lcham:</b> {size}\n"
-            if gender:
-                text += f"   👫 <b>Jins:</b> {gender}\n"
-            text += f"   📦 <b>Soni:</b> {quantity} ta\n"
-            text += f"   💰 <b>Narxi:</b> {subtotal:,} UZS\n\n"
-            total += subtotal
+        if total == 0:
+            logger.error(f"Order total is 0 for order {order.id}")
+            await bot.send_message(chat_id, "❌ Buyurtma summasi noto'g'ri. Iltimos, qayta urinib ko'ring.")
+            return
             
         text += f"<b>💳 Jami summa:</b> {total:,} UZS"
 
-        # Send order to channel
+        # Send order to channel with error handling
         try:
-            order_msg = await bot.send_message(CHANNEL_ID, text)
+            order_msg = await bot.send_message(CHANNEL_ID, text, parse_mode='HTML')
+            logger.info(f"Order message sent to channel for order {order.id}")
             
             # Send location if available
             if order.location and "," in order.location:
-                lat, lon = map(float, order.location.split(','))
-                await bot.send_location(
-                    CHANNEL_ID, lat, lon, reply_to_message_id=order_msg.message_id
-                )
+                try:
+                    lat, lon = map(float, order.location.split(','))
+                    await bot.send_location(
+                        CHANNEL_ID, lat, lon, reply_to_message_id=order_msg.message_id
+                    )
+                    logger.info(f"Location sent to channel for order {order.id}")
+                except (ValueError, TypeError) as e:
+                    logger.error(f"Failed to parse location for order {order.id}: {e}")
+                except ApiTelegramException as e:
+                    logger.error(f"Failed to send location to channel for order {order.id}: {e}")
+                    
         except ApiTelegramException as e:
             logger.error(f"Failed to send order to channel: {e}")
             await bot.send_message(
                 chat_id,
-                "❌ Buyurtmani yuborishda xatolik yuz berdi. Iltimos, administrator bilan bog'laning."
+                "❌ Buyurtmani kanalga yuborishda xatolik yuz berdi.\n"
+                "Buyurtmangiz saqlandi, operator tez orada aloqaga chiqadi."
             )
-            return
+            # Don't return here, continue with order processing
 
-        # Delete the completed order
-        db.delete(order)
-        db.commit()
-        
-        # Send success message to user
-        await bot.send_message(
-            chat_id,
-            "🎉 <b>Buyurtmangiz muvaffaqiyatli qabul qilindi!</b>\n\n"
-            "Tez orada operatorlarimiz siz bilan bog'lanadi.\n"
-            "Rahmat! 🙏\n\n"
-            "Yangi buyurtma berish uchun /start tugmasini bosing."
-        )
-        
-        logger.info(f"Order {order.id} processed successfully for user {chat_id}")
+        # Delete the completed order and send success message
+        try:
+            db.delete(order)
+            db.commit()
+            logger.info(f"Order {order.id} deleted from database")
+            
+            # Send success message to user
+            await bot.send_message(
+                chat_id,
+                "🎉 <b>Buyurtmangiz muvaffaqiyatli qabul qilindi!</b>\n\n"
+                "Tez orada operatorlarimiz siz bilan bog'lanadi.\n"
+                "Rahmat! 🙏\n\n"
+                "Yangi buyurtma berish uchun /start tugmasini bosing.",
+                parse_mode='HTML'
+            )
+            
+            logger.info(f"Order {order.id} processed successfully for user {chat_id}")
+            
+        except Exception as e:
+            logger.error(f"Error finalizing order {order.id}: {e}")
+            await bot.send_message(
+                chat_id,
+                "❌ Buyurtmani yakunlashda xatolik yuz berdi. Administrator bilan bog'laning."
+            )
         
     except Exception as e:
-        logger.error(f"Error processing order confirmation: {e}")
+        logger.error(f"Error processing order confirmation for order {order.id}: {e}")
         logger.error(traceback.format_exc())
         await bot.send_message(
             chat_id,
