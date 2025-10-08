@@ -15,6 +15,7 @@ import contextlib
 import logging
 import asyncio
 import time
+import traceback
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import httpx
@@ -31,64 +32,79 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.cleanup_interval = 30  # Cleanup every 30 seconds instead of every request
     
     async def dispatch(self, request: Request, call_next):
-        # Skip rate limiting for webhook endpoints to ensure fast response
-        if request.url.path.startswith(("/webhook", "/health")):
+        try:
+            # Skip rate limiting for webhook endpoints to ensure fast response
+            if request.url.path.startswith(("/webhook", "/health")):
+                return await call_next(request)
+                
+            client_ip = getattr(request.client, 'host', 'unknown') if request.client else 'unknown'
+            current_time = time.time()
+            
+            # Only cleanup periodically, not on every request
+            if current_time - self.last_cleanup > self.cleanup_interval:
+                self.clients = {
+                    ip: (count, timestamp) for ip, (count, timestamp) in self.clients.items()
+                    if current_time - timestamp < self.period
+                }
+                self.last_cleanup = current_time
+            
+            # Check rate limit
+            if client_ip in self.clients:
+                count, timestamp = self.clients[client_ip]
+                if current_time - timestamp < self.period and count >= self.calls:
+                    return JSONResponse(
+                        status_code=429,
+                        content={"detail": "Rate limit exceeded"}
+                    )
+                self.clients[client_ip] = (count + 1, timestamp)
+            else:
+                self.clients[client_ip] = (1, current_time)
+            
             return await call_next(request)
             
-        client_ip = request.client.host
-        current_time = time.time()
-        
-        # Only cleanup periodically, not on every request
-        if current_time - self.last_cleanup > self.cleanup_interval:
-            self.clients = {
-                ip: (count, timestamp) for ip, (count, timestamp) in self.clients.items()
-                if current_time - timestamp < self.period
-            }
-            self.last_cleanup = current_time
-        
-        # Check rate limit
-        if client_ip in self.clients:
-            count, timestamp = self.clients[client_ip]
-            if current_time - timestamp < self.period and count >= self.calls:
-                return JSONResponse(
-                    status_code=429,
-                    content={"detail": "Rate limit exceeded"}
-                )
-            self.clients[client_ip] = (count + 1, timestamp)
-        else:
-            self.clients[client_ip] = (1, current_time)
-        
-        return await call_next(request)
+        except Exception as e:
+            logger.error(f"Error in RateLimitMiddleware: {e}")
+            # If rate limiting fails, continue without it
+            return await call_next(request)
 
 # --- Security Headers Middleware ---
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        
-        # Security headers
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "SAMEORIGIN"  # Changed from DENY to allow Telegram iframe
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        
-        # Add HSTS in production
-        if ENVIRONMENT == "production":
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        
-        # Only add CSP for non-API routes
-        if not request.url.path.startswith("/api") and not request.url.path.startswith("/auth"):
-            response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' https://telegram.org https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; "
-                "img-src 'self' data: https:; "
-                "font-src 'self' https://fonts.gstatic.com; "
-                "connect-src 'self' https://telegram.org https://api.telegram.org; "
-                "frame-ancestors https://web.telegram.org https://k.telegram.org;"
+        try:
+            response = await call_next(request)
+            
+            # Security headers
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "SAMEORIGIN"  # Changed from DENY to allow Telegram iframe
+            response.headers["X-XSS-Protection"] = "1; mode=block"
+            response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+            response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+            
+            # Add HSTS in production
+            if ENVIRONMENT == "production":
+                response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            
+            # Only add CSP for non-API routes
+            if not request.url.path.startswith("/api") and not request.url.path.startswith("/auth"):
+                response.headers["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline' https://telegram.org https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; "
+                    "img-src 'self' data: https:; "
+                    "font-src 'self' https://fonts.gstatic.com; "
+                    "connect-src 'self' https://telegram.org https://api.telegram.org; "
+                    "frame-ancestors https://web.telegram.org https://k.telegram.org;"
+                )
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error in SecurityHeadersMiddleware: {e}")
+            # Return a basic error response if middleware fails
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Internal server error"}
             )
-        
-        return response
 
 # --- Request Logging Middleware ---
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
@@ -98,10 +114,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # Only log non-health check requests to reduce noise
         should_log = not request.url.path.startswith(("/health", "/webhook"))
         
-        if should_log:
-            logger.info(f"Request: {request.method} {request.url.path} - IP: {request.client.host}")
-        
         try:
+            if should_log:
+                logger.info(f"Request: {request.method} {request.url.path} - IP: {getattr(request.client, 'host', 'unknown')}")
+            
             response = await call_next(request)
             process_time = time.time() - start_time
             
@@ -119,7 +135,13 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             process_time = time.time() - start_time
             logger.error(f"Request failed: {request.url.path} - Error: {e} - Time: {process_time:.4f}s")
-            raise
+            
+            # Return error response instead of raising
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Internal server error"},
+                headers={"X-Process-Time": str(process_time)}
+            )
 
 # --- Database Initialization ---
 # (init_database function moved to database.py)
@@ -215,18 +237,34 @@ async def startup_event():
     try:
         logger.info(f"Starting Telegram Shop application in {ENVIRONMENT} mode")
         
+        # Test database connection first
+        if not test_database_connection():
+            logger.error("Database connection failed during startup")
+            raise Exception("Database connection failed")
+        
         # Initialize database
-        await init_database()
+        try:
+            await init_database()
+            logger.info("Database initialized successfully")
+        except Exception as db_error:
+            logger.error(f"Database initialization failed: {db_error}")
+            raise
         
         # Set up Telegram webhook
-        webhook_url = f"{URL}/webhook"
-        await bot.set_webhook(url=webhook_url)
-        logger.info(f"Telegram webhook set to {webhook_url}")
+        try:
+            webhook_url = f"{URL}/webhook"
+            await bot.set_webhook(url=webhook_url)
+            logger.info(f"Telegram webhook set to {webhook_url}")
+        except Exception as webhook_error:
+            logger.error(f"Webhook setup failed: {webhook_error}")
+            # Don't raise here - app can still work without webhook in some cases
+            logger.warning("Continuing without webhook - bot may not receive updates")
         
         logger.info("Application startup completed successfully")
         
     except Exception as e:
         logger.error(f"Application startup failed: {e}")
+        logger.error(f"Startup error details: {type(e).__name__}: {str(e)}")
         raise
 
 @app.on_event("shutdown")
@@ -265,7 +303,23 @@ async def get_webhook_info(request: Request):
 async def webhook_handler(request: Request):
     """Handle incoming Telegram webhook updates."""
     try:
-        json_data = await request.json()
+        # Get request body with timeout and size limit
+        try:
+            json_data = await request.json()
+        except Exception as e:
+            logger.error(f"Failed to parse webhook JSON: {e}")
+            return JSONResponse(
+                status_code=200,  # Always return 200 to avoid Telegram retries
+                content={"status": "error", "message": "Invalid JSON"}
+            )
+        
+        # Validate basic structure
+        if not isinstance(json_data, dict):
+            logger.error("Webhook data is not a dictionary")
+            return JSONResponse(
+                status_code=200,
+                content={"status": "error", "message": "Invalid data format"}
+            )
         
         # Respond immediately to Telegram to avoid timeout
         response = JSONResponse(content={"status": "ok"})
@@ -295,15 +349,34 @@ async def process_webhook_update(json_data: dict):
 async def read_root(request: Request):
     """Serve the main application entry point."""
     try:
-        with open("templates/index.html", "r", encoding="utf-8") as f:
-            content = f.read()
+        # Check if template file exists
+        template_path = "templates/index.html"
+        try:
+            with open(template_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except FileNotFoundError:
+            logger.error(f"Template file not found: {template_path}")
+            return HTMLResponse(
+                content="<h1>Application Starting</h1><p>Template not found</p>",
+                status_code=500
+            )
+        except PermissionError:
+            logger.error(f"Permission denied accessing template: {template_path}")
+            return HTMLResponse(
+                content="<h1>Application Error</h1><p>Permission denied</p>",
+                status_code=500
+            )
+        
         return HTMLResponse(content=content)
-    except FileNotFoundError:
-        logger.error("index.html template not found")
-        raise HTTPException(status_code=500, detail="Template not found")
+        
     except Exception as e:
         logger.error(f"Error serving root page: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(traceback.format_exc())
+        return HTMLResponse(
+            content=f"<h1>Server Error</h1><p>Internal error occurred: {str(e)}</p>",
+            status_code=500
+        )
 
 # --- Include Application Routers ---
 app.include_router(menu.router, tags=["Menu"])
