@@ -129,7 +129,7 @@ class DatabaseMigrator:
         
         return 'TEXT'  # Safe fallback
     
-    def create_enum_if_needed(self, model_class, column_name: str, connection=None) -> str:
+    def create_enum_if_needed(self, model_class, column_name: str) -> str:
         """Create enum type if needed and return the enum name."""
         column = getattr(model_class.__table__.columns, column_name, None)
         if not column:
@@ -139,45 +139,43 @@ class DatabaseMigrator:
             enum_name = getattr(column.type, 'name', f"{model_class.__tablename__}_{column_name}")
             enum_values = column.type.enums
             
-            # Use provided connection or create a new one
-            if connection:
-                conn = connection
-                should_close = False
-            else:
-                conn = self.engine.connect()
-                should_close = True
-            
+            # Create enum type using separate connection without transactions
             try:
-                # Check if enum already exists
-                result = conn.execute(text("""
-                    SELECT 1 FROM pg_type WHERE typname = :enum_name
-                """), {"enum_name": enum_name})
+                # Use raw connection without transaction for DDL
+                raw_conn = self.engine.raw_connection()
+                cursor = raw_conn.cursor()
                 
-                if not result.fetchone():
-                    # Create enum type
-                    enum_values_str = ', '.join([f"'{value}'" for value in enum_values])
-                    conn.execute(text(f"""
-                        CREATE TYPE {enum_name} AS ENUM ({enum_values_str});
-                    """))
-                    if not connection:  # Only commit if we created our own connection
-                        conn.commit()
-                    logger.info(f"✅ Created enum type '{enum_name}'")
-            finally:
-                if should_close:
-                    conn.close()
-            
-            return enum_name
+                try:
+                    # Check if enum already exists
+                    cursor.execute("SELECT 1 FROM pg_type WHERE typname = %s", (enum_name,))
+                    
+                    if not cursor.fetchone():
+                        # Create enum type
+                        enum_values_str = ', '.join([f"'{value}'" for value in enum_values])
+                        cursor.execute(f"CREATE TYPE {enum_name} AS ENUM ({enum_values_str})")
+                        raw_conn.commit()
+                        logger.info(f"✅ Created enum type '{enum_name}'")
+                    
+                finally:
+                    cursor.close()
+                    raw_conn.close()
+                
+                return enum_name
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to create enum '{enum_name}': {e}")
+                return None
         
         return None
     
     def add_missing_column(self, table_name: str, column_name: str, column_info: Dict[str, Any], model_class) -> bool:
         """Add a missing column to the database table."""
         try:
+            # First, create enum type if needed (outside any transaction)
+            enum_name = self.create_enum_if_needed(model_class, column_name)
+            
+            # Now add the column
             with self.engine.connect() as conn:
-                # First, create enum type if needed (outside transaction)
-                enum_name = self.create_enum_if_needed(model_class, column_name, conn)
-                
-                # Now start transaction for column addition
                 trans = conn.begin()
                 
                 try:
@@ -271,6 +269,10 @@ class DatabaseMigrator:
                 result['errors'].append(f"Failed to create table '{table_name}'")
                 return result
         
+        # Special handling for Admin model broadcasting column
+        if model_name == 'Admin' and table_name == 'admins':
+            return self._handle_admin_broadcasting_migration(result, model_class)
+        
         # Check for missing columns
         missing_columns = self.get_missing_columns(model_class)
         
@@ -289,6 +291,51 @@ class DatabaseMigrator:
             else:
                 result['errors'].append(f"Failed to add column '{col_name}'")
         
+        return result
+    
+    def _handle_admin_broadcasting_migration(self, result, model_class) -> Dict[str, Any]:
+        """Special handler for Admin model broadcasting column migration"""
+        try:
+            with self.engine.connect() as conn:
+                # Check if broadcasting column exists
+                col_check = conn.execute(text("""
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'admins' AND column_name = 'broadcasting'
+                """))
+                col_exists = col_check.fetchone() is not None
+                
+                if col_exists:
+                    logger.info("✅ All columns exist for Admin")
+                    return result
+                
+                logger.info("📝 Found 1 missing column(s) in admins:")
+                logger.info("   - broadcasting: USER-DEFINED")
+                
+                # Try to create enum and add column in single transaction
+                trans = conn.begin()
+                try:
+                    # Check and create enum
+                    enum_check = conn.execute(text("SELECT 1 FROM pg_type WHERE typname = 'broadcasting'"))
+                    if not enum_check.fetchone():
+                        conn.execute(text("CREATE TYPE broadcasting AS ENUM ('forward', 'copy')"))
+                        logger.info("✅ Created broadcasting enum")
+                    
+                    # Add column
+                    conn.execute(text("ALTER TABLE admins ADD COLUMN broadcasting broadcasting"))
+                    trans.commit()
+                    
+                    result['columns_added'].append('broadcasting')
+                    logger.info("✅ Added column 'broadcasting' (broadcasting) to table 'admins'")
+                    
+                except Exception as e:
+                    trans.rollback()
+                    logger.error(f"❌ Failed to add broadcasting column: {e}")
+                    result['errors'].append(f"Failed to add column 'broadcasting'")
+                
+        except Exception as e:
+            logger.error(f"❌ Database connection error: {e}")
+            result['errors'].append(f"Database connection error: {e}")
+            
         return result
     
     def run_migrations(self) -> Dict[str, Any]:
