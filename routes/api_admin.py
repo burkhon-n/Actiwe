@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from models import Admin, Item, ShopTheme
+from models import Admin, Item, ShopTheme, Order, User
 from database import get_db
 from routes.dependencies import get_admin_user
+from bot import bot
+from config import DELIVERY_FEE
 import shutil
 import uuid
 import os
+import json
 
 router = APIRouter(prefix="/api/admin", tags=["Admin API"])
 
@@ -136,3 +139,165 @@ async def upload_logo(
     except Exception as e:
         print("Error uploading logo:", e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error uploading logo")
+
+@router.get("/users/stats")
+async def get_user_stats(db: Session = Depends(get_db), _=Depends(get_admin_user(roles=['admin', 'sadmin']))):
+    """Get user statistics"""
+    try:
+        print("=== DEBUG: get_user_stats called ===")
+        
+        # Count all users
+        total_users = db.query(User).count()
+        print(f"DEBUG: total_users query result: {total_users}")
+        
+        # Count active users (last seen within 30 days)
+        # Convert 30 days to epoch timestamp for comparison
+        import time
+        from datetime import datetime, timedelta
+        thirty_days_ago_timestamp = int((datetime.utcnow() - timedelta(days=30)).timestamp())
+        print(f"DEBUG: thirty_days_ago_timestamp: {thirty_days_ago_timestamp}")
+        
+        active_users = db.query(User).filter(User.last_interaction > thirty_days_ago_timestamp).count()
+        print(f"DEBUG: active_users query result: {active_users}")
+        
+        stats = {
+            "total": total_users,
+            "active": active_users,
+            "inactive": total_users - active_users
+        }
+        
+        print(f"DEBUG: returning stats: {stats}")
+        return stats
+        
+    except Exception as e:
+        print(f"DEBUG: Error in get_user_stats: {e}")
+        print(f"DEBUG: Error type: {type(e)}")
+        import traceback
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error getting user statistics: {str(e)}"
+        )
+
+# Test endpoint without authentication
+@router.get("/test/users/stats")
+async def test_get_user_stats(db: Session = Depends(get_db)):
+    """Test endpoint to get user statistics without authentication"""
+    try:
+        print("=== DEBUG: test_get_user_stats called ===")
+        
+        # Count all users
+        total_users = db.query(User).count()
+        print(f"DEBUG: total_users query result: {total_users}")
+        
+        # Get all users for debugging
+        all_users = db.query(User).all()
+        print(f"DEBUG: all_users count: {len(all_users)}")
+        for user in all_users:
+            print(f"DEBUG: User - telegram_id: {user.telegram_id}, language_code: {user.language_code}, created_at: {user.created_at}, last_interaction: {user.last_interaction}")
+        
+        # Count active users (last seen within 30 days)
+        # Convert 30 days to epoch timestamp for comparison
+        import time
+        from datetime import datetime, timedelta
+        thirty_days_ago_timestamp = int((datetime.utcnow() - timedelta(days=30)).timestamp())
+        print(f"DEBUG: thirty_days_ago_timestamp: {thirty_days_ago_timestamp}")
+        
+        active_users = db.query(User).filter(User.last_interaction > thirty_days_ago_timestamp).count()
+        print(f"DEBUG: active_users query result: {active_users}")
+        
+        stats = {
+            "total": total_users,
+            "active": active_users,
+            "inactive": total_users - active_users,
+            "debug_users": [{"telegram_id": u.telegram_id, "language_code": u.language_code, "last_interaction": u.last_interaction} for u in all_users]
+        }
+        
+        print(f"DEBUG: returning stats: {stats}")
+        return stats
+        
+    except Exception as e:
+        print(f"DEBUG: Error in test_get_user_stats: {e}")
+        print(f"DEBUG: Error type: {type(e)}")
+        import traceback
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error getting user statistics: {str(e)}"
+        )
+
+@router.get("/users")
+async def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _=Depends(get_admin_user(roles=['admin', 'sadmin']))):
+    """Get list of users."""
+    try:
+        print(f"DEBUG: Getting users with skip={skip}, limit={limit}")
+        users = db.query(User).order_by(User.created_at.desc()).offset(skip).limit(limit).all()
+        total = db.query(User).count()
+        print(f"DEBUG: Found {len(users)} users, total={total}")
+        
+        users_data = []
+        for user in users:
+            # Convert epoch timestamps to ISO format for frontend
+            from datetime import datetime
+            created_at_iso = datetime.fromtimestamp(user.created_at).isoformat() if user.created_at else None
+            last_interaction_iso = datetime.fromtimestamp(user.last_interaction).isoformat() if user.last_interaction else None
+            
+            user_data = {
+                "id": user.id,
+                "telegram_id": user.telegram_id,
+                "display_name": f"User {user.telegram_id}",
+                "is_active": user.is_active,
+                "language_code": user.language_code,
+                "created_at": created_at_iso,
+                "last_interaction": last_interaction_iso
+            }
+            users_data.append(user_data)
+            print(f"DEBUG: User data: {user_data}")
+        
+        result = {
+            "users": users_data,
+            "total": total,
+            "skip": skip,
+            "limit": limit
+        }
+        print(f"DEBUG: Returning result: {result}")
+        return result
+    except Exception as e:
+        print(f"DEBUG: Error in get_users: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error getting users: {str(e)}")
+
+@router.get("/orders")
+async def get_orders(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), _=Depends(get_admin_user(roles=['admin', 'sadmin']))):
+    """Get recent orders for admin panel."""
+    try:
+        orders = db.query(Order).order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
+        
+        orders_data = []
+        for order in orders:
+            # Calculate total amount from order items
+            try:
+                cart = json.loads(order.items)
+                subtotal = sum(Item.get(db, int(k.split('-')[0])).price * v for k, v in cart.items())
+                total_amount = subtotal + DELIVERY_FEE
+            except:
+                total_amount = 0
+            
+            orders_data.append({
+                "id": order.id,
+                "user_id": order.user_id,
+                "name": order.user_name or f"User {order.user_id}",
+                "phone": order.user_phone or "Not provided",
+                "total_amount": total_amount,
+                "created_at": order.created_at
+            })
+        
+        return {
+            "orders": orders_data,
+            "total": db.query(Order).count(),
+            "skip": skip,
+            "limit": limit
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting orders: {str(e)}")

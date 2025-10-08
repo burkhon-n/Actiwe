@@ -68,12 +68,18 @@
        <a href="/" class="flex-1 flex justify-center">
            <img src="{{ logo }}" alt="Shop Logo" class="h-8 md:h-10">
        </a>
-       <div class="flex-1 flex justify-end">
-           <button id="add-item-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 w-full sm:w-auto">
+       <div class="flex-1 flex justify-end gap-2">
+           <button id="users-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
+            <span class="hidden sm:inline">Users</span>
+        </button>
+           <button id="add-item-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span>Add item</span>
+            <span class="hidden sm:inline">Add item</span>
         </button>
     </div>
 </nav>
@@ -240,6 +246,13 @@
                 currentItemId = null;
             });
             addItemBtn.addEventListener('click', redirectToAdd);
+            
+            // Add event listener for users button
+            const usersBtn = document.getElementById('users-btn');
+            usersBtn.addEventListener('click', () => {
+                const url = `/admin/users?initData=${encodeURIComponent(initData)}&initDataUnsafe=${encodeURIComponent(JSON.stringify(initDataUnsafe))}`;
+                window.location.href = url;
+            });
 
             // Main function to check auth and load content
             const checkAuthAndLoad = async () => {

@@ -118,6 +118,9 @@ def validate(init_data: str) -> bool:
     except Exception:
         return False
     
+# --- Delivery Configuration ---
+DELIVERY_FEE = 30000  # Delivery fee for Tashkent in UZS
+
 def format_price(price: int) -> str:
     """Formats the price with spaces as thousand separators."""
     return f"{price:,}".replace(",", " ")

@@ -7,7 +7,7 @@ from urllib.parse import parse_qsl, unquote
 
 from database import get_db
 from models import CartItem, Item, Order, Admin
-from config import validate, SADMIN
+from config import validate, SADMIN, DELIVERY_FEE
 import logging
 
 # Setup logging
@@ -17,27 +17,18 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 def get_user_id_from_init_data(init_data_str: str) -> int:
-    """
-    Central helper function to validate initData and extract the user ID.
-    Includes detailed logging for debugging.
-    """
-    log.info(f"--- [AUTH DEBUG] Received initData string: {init_data_str}")
+    """Central helper function to validate initData and extract the user ID."""
     if not init_data_str or not validate(init_data_str):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or missing initData")
     
-    log.info("--- [AUTH DEBUG] initData validation successful.")
-    
     try:
         user_data_str = dict(parse_qsl(unquote(init_data_str))).get('user', '{}')
-        log.info(f"--- [AUTH DEBUG] Extracted user data string: {user_data_str}")
         user_data = json.loads(user_data_str)
         user_id = user_data.get("id")
         if not user_id:
             raise ValueError("User ID not found in initData")
-        log.info(f"--- [AUTH DEBUG] Parsed user ID: {user_id}")
         return user_id
     except (json.JSONDecodeError, ValueError) as e:
-        log.error(f"--- [AUTH DEBUG] Error parsing user data: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid user data format: {e}")
 
 @router.post("/")
@@ -79,7 +70,8 @@ async def auth(request: Request, db: Session = Depends(get_db)):
     return JSONResponse(content={
         'success': True, 
         'items': items, 
-        'cart_items': cart_items
+        'cart_items': cart_items,
+        'delivery_fee': DELIVERY_FEE
     })
 
 @router.post("/check_role")
@@ -88,14 +80,9 @@ async def check_role(request: Request, db: Session = Depends(get_db)):
     init_data_str = data.get("initData")
     user_id = get_user_id_from_init_data(init_data_str)
 
-    print("User ID from initData:", user_id)
-    print("SADMIN ID from config:", SADMIN)
-
     if int(user_id) == int(SADMIN):
         admin = Admin(user_id, 'sadmin')
-        print("User is super admin.")
     else:
         admin = db.query(Admin).filter_by(telegram_id=user_id).first()
 
-    print("Admin fetched from DB:", admin)
     return JSONResponse(content={'success': True, 'role': admin.role if admin else 'user'})

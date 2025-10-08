@@ -6,7 +6,7 @@ from database import get_db
 from .dependencies import get_user_id_from_init_data # Import the shared function
 import json
 from bot import bot, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton  # Assuming you have a bot instance for Telegram notifications
-from config import URL, format_price
+from config import URL, format_price, DELIVERY_FEE
 
 router = APIRouter(prefix="/api", tags=["User API"])
 
@@ -105,7 +105,12 @@ async def place_order(request: Request, db: Session = Depends(get_db)):
         details_str = f" ({', '.join(item_details)})" if item_details else ""
         text += f"\n{i}. {item.title}{details_str} - {value} dona - {format_price(item.price * value)} so'm"
     
-    text += f"\n\n<b>Jami: {format_price(sum(Item.get(db, int(k.split('-')[0])).price * v for k, v in cart.items()))} so'm</b>"
+    subtotal = sum(Item.get(db, int(k.split('-')[0])).price * v for k, v in cart.items())
+    total = subtotal + DELIVERY_FEE
+    
+    text += f"\n\n<b>Mahsulotlar: {format_price(subtotal)} so'm</b>"
+    text += f"\n<b>Yetkazib berish: {format_price(DELIVERY_FEE)} so'm</b>"
+    text += f"\n<b>Jami: {format_price(total)} so'm</b>"
 
     await bot.send_message(
         user_id,

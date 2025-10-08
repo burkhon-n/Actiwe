@@ -4,13 +4,12 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.exception_handlers import http_exception_handler
-from database import engine, Base, SessionLocal, get_db, test_database_connection, DatabaseSessionManager, init_database
+from database import engine, Base, get_db, test_database_connection, init_database, DATABASE_URL
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from models import Admin, ShopTheme
 from routes import menu, auth, admin, api_admin, error, api_user
-from config import SADMIN, URL, TOKEN, ENVIRONMENT, DEBUG, logger, DB_PASSWORD, CHANNEL_ID
-from database import DATABASE_URL
+from config import SADMIN, URL, TOKEN, ENVIRONMENT, DEBUG, logger
 from bot import bot, Update
 import contextlib
 import logging
@@ -314,17 +313,5 @@ app.include_router(api_admin.router, tags=["Admin API"])
 app.include_router(api_user.router, tags=["User API"])
 app.include_router(error.router, tags=["Error Handling"])
 
-# --- Development Tools ---
-if DEBUG:
-    @app.get("/debug/config")
-    async def debug_config():
-        """Debug endpoint to check configuration (development only)."""
-        return {
-            "environment": ENVIRONMENT,
-            "debug": DEBUG,
-            "database_url": DATABASE_URL.replace(DB_PASSWORD, "***") if DB_PASSWORD else "Not set",
-            "url": URL,
-            "has_token": bool(TOKEN),
-            "channel_id": CHANNEL_ID,
-        }
+
 

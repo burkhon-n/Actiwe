@@ -1,241 +1,478 @@
-# Actiwe Telegram Shop
+# Actiwe E-commerce Bot# Actiwe Telegram Shop
 
-A modern e-commerce Telegram Web App built with FastAPI, PostgreSQL, and Telegram Bot API. Features a complete admin panel, shopping cart, order management, and production-ready deployment configuration.
 
-## 🚀 Features
 
-- **Telegram Web App Integration**: Seamless shopping experience within Telegram
-- **Admin Panel**: Complete product and order management
-- **Shopping Cart**: Advanced cart with size and gender selection
-- **Order Processing**: Complete order workflow with customer data collection
-- **Production Ready**: Docker, Nginx, SSL, database migrations
-- **Security**: Rate limiting, input validation, secure headers
+A complete Telegram e-commerce bot with web admin panel, built with FastAPI and modern web technologies.A modern e-commerce Telegram Web App built with FastAPI, PostgreSQL, and Telegram Bot API. Features a complete admin panel, shopping cart, order management, and production-ready deployment configuration.
+
+
+
+## Features## 🚀 Features
+
+
+
+### 🤖 Telegram Bot- **Telegram Web App Integration**: Seamless shopping experience within Telegram
+
+- Product catalog with image gallery- **Admin Panel**: Complete product and order management
+
+- Smart shopping cart with size/gender selection- **Shopping Cart**: Advanced cart with size and gender selection
+
+- Order management and status tracking- **Order Processing**: Complete order workflow with customer data collection
+
+- User-friendly Uzbek interface- **Production Ready**: Docker, Nginx, SSL, database migrations
+
+- Admin broadcast system (copy/forward messages)- **Security**: Rate limiting, input validation, secure headers
+
 - **Database Migrations**: Alembic for safe schema updates
 
-## 📋 Requirements
+### 🌐 Web Admin Panel
 
-- Python 3.11+
-- PostgreSQL 12+
-- Telegram Bot Token
+- Product management (CRUD operations)## 📋 Requirements
+
+- Order tracking and management
+
+- User analytics and statistics- Python 3.11+
+
+- Theme customization- PostgreSQL 12+
+
+- File upload with image optimization- Telegram Bot Token
+
 - Domain with SSL certificate (for production)
 
-## 🛠️ Installation
+### 🛡️ Security & Performance
 
-### Development Setup
+- Telegram Web App authentication## 🛠️ Installation
 
-1. **Clone the repository**
+- Rate limiting and CORS protection
+
+- Database connection pooling### Development Setup
+
+- Automatic schema migrations
+
+- Production-ready configuration1. **Clone the repository**
+
    ```bash
-   git clone <repository-url>
+
+## Quick Start   git clone <repository-url>
+
    cd Actiwe
-   ```
 
-2. **Set up environment**
-   ```bash
+### 1. Environment Setup   ```
+
+```bash
+
+# Copy environment template2. **Set up environment**
+
+cp .env.example .env   ```bash
+
    cp .env.example .env
-   # Edit .env with your configuration
-   ```
+
+# Edit configuration   # Edit .env with your configuration
+
+nano .env   ```
+
+```
 
 3. **Configure environment variables**
-   ```env
-   # Database
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_NAME=actiwe_shop
-   DB_USER=your_user
-   DB_PASSWORD=your_password
-   
+
+### 2. Required Environment Variables   ```env
+
+```bash   # Database
+
+# Database   DB_HOST=localhost
+
+DB_HOST=localhost   DB_PORT=5432
+
+DB_PORT=5432   DB_NAME=actiwe_shop
+
+DB_NAME=actiwe_shop   DB_USER=your_user
+
+DB_USER=your_db_user   DB_PASSWORD=your_password
+
+DB_PASSWORD=your_db_password   
+
    # Application
-   URL=https://your-domain.com
-   SECRET_KEY=your-secret-key
-   ENVIRONMENT=development
-   DEBUG=true
-   
+
+# Application   URL=https://your-domain.com
+
+URL=https://your-domain.com   SECRET_KEY=your-secret-key
+
+SECRET_KEY=your-secret-key-here   ENVIRONMENT=development
+
+ENVIRONMENT=production   DEBUG=true
+
+DEBUG=false   
+
    # Telegram
-   TOKEN=your_bot_token
-   CHANNEL_ID=@your_channel
-   SADMIN=your_telegram_id
-   ```
+
+# Telegram   TOKEN=your_bot_token
+
+TOKEN=your_telegram_bot_token   CHANNEL_ID=@your_channel
+
+CHANNEL_ID=@your_channel_id   SADMIN=your_telegram_id
+
+SADMIN=your_telegram_user_id   ```
+
+```
 
 4. **Run development server**
-   ```bash
-   ./dev.sh
-   ```
+
+### 3. Database Setup   ```bash
+
+```bash   ./dev.sh
+
+# Install dependencies   ```
+
+pip install -r requirements.txt
 
 ### Production Deployment
 
-#### Option 1: Docker Compose (Recommended)
+# Run automatic migrations
+
+python migrations.py#### Option 1: Docker Compose (Recommended)
+
+```
 
 1. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with production values
-   ```
 
-2. **Update nginx.conf**
-   - Replace `your-domain.com` with your actual domain
-   - Add SSL certificates to `./certs/` directory
+### 4. Telegram Bot Setup   ```bash
 
-3. **Deploy**
-   ```bash
-   docker-compose up -d
-   ```
+1. Create bot with [@BotFather](https://t.me/botfather)   cp .env.example .env
 
-#### Option 2: Manual Deployment
+2. Set your domain for webhook:   # Edit .env with production values
 
-1. **Run deployment script**
-   ```bash
+   ```   ```
+
+   /setmenubutton
+
+   🛍 Shop - https://your-domain.com2. **Update nginx.conf**
+
+   ```   - Replace `your-domain.com` with your actual domain
+
+3. Configure Web App URL in bot settings   - Add SSL certificates to `./certs/` directory
+
+
+
+### 5. Deploy & Run3. **Deploy**
+
+```bash   ```bash
+
+# Production deployment   docker-compose up -d
+
+python -m uvicorn main:app --host 0.0.0.0 --port 8000   ```
+
+
+
+# Or with deployment script#### Option 2: Manual Deployment
+
+chmod +x deploy.sh
+
+./deploy.sh1. **Run deployment script**
+
+```   ```bash
+
    ./deploy.sh
-   ```
 
-#### Option 3: cPanel Shared Hosting (Optimized)
+## Project Structure   ```
 
-1. **Prepare deployment**
-   ```bash
-   # Fix file permissions
-   python3 fix_permissions.py
-   
-   # Run deployment script
-   chmod +x deploy_cpanel.sh
-   ./deploy_cpanel.sh
-   ```
 
-2. **Upload to cPanel**
-   - Upload all files to your domain's document root
-   - Ensure `passenger_wsgi.py` has 755 permissions
-   - Ensure `Passengerfile.json` has 644 permissions
 
-3. **Configure Python App in cPanel**
-   - App Directory: `/home/yourusername/repositories/Actiwe`
-   - App URL: `/` (or your subdomain)
-   - Python Version: 3.8+
-   - Application Startup File: `passenger_wsgi.py`
+```#### Option 3: cPanel Shared Hosting (Optimized)
 
-4. **Set Environment Variables**
+├── bot.py              # Telegram bot handlers
+
+├── main.py             # FastAPI application1. **Prepare deployment**
+
+├── config.py           # Configuration management   ```bash
+
+├── database.py         # Database connection & ORM   # Fix file permissions
+
+├── migrations.py       # Automatic schema migrations   python3 fix_permissions.py
+
+├── models/             # SQLAlchemy models   
+
+│   ├── User.py   # Run deployment script
+
+│   ├── Admin.py   chmod +x deploy_cpanel.sh
+
+│   ├── Item.py   ./deploy_cpanel.sh
+
+│   ├── Order.py   ```
+
+│   ├── CartItem.py
+
+│   └── ShopTheme.py2. **Upload to cPanel**
+
+├── routes/             # API endpoints   - Upload all files to your domain's document root
+
+│   ├── auth.py         # Authentication   - Ensure `passenger_wsgi.py` has 755 permissions
+
+│   ├── menu.py         # Product catalog   - Ensure `Passengerfile.json` has 644 permissions
+
+│   ├── admin.py        # Admin panel
+
+│   ├── api_admin.py    # Admin API3. **Configure Python App in cPanel**
+
+│   ├── api_user.py     # User API   - App Directory: `/home/yourusername/repositories/Actiwe`
+
+│   └── error.py        # Error handling   - App URL: `/` (or your subdomain)
+
+├── templates/          # HTML templates   - Python Version: 3.8+
+
+├── static/             # Static files & uploads   - Application Startup File: `passenger_wsgi.py`
+
+└── docs/               # Additional documentation
+
+```4. **Set Environment Variables**
+
    - Configure all required environment variables in cPanel Python app settings
-   - Restart the Python application
 
-## 🗄️ Database Management
+## API Endpoints   - Restart the Python application
 
-### Initial Setup
-```bash
-# Create initial migration
+
+
+### Public Endpoints## 🗄️ Database Management
+
+- `GET /` - Product catalog
+
+- `POST /auth/` - User authentication### Initial Setup
+
+- `POST /checkout` - Order submission```bash
+
+- `GET /health` - Health check# Create initial migration
+
 alembic revision --autogenerate -m "Initial migration"
 
-# Apply migrations
-alembic upgrade head
-```
+### Admin Endpoints (Authenticated)
 
-### Adding New Columns (Safe for Production)
+- `GET /admin/` - Admin dashboard# Apply migrations
+
+- `GET /api/admin/stats` - Analyticsalembic upgrade head
+
+- `POST /api/admin/items` - Create product```
+
+- `PUT /api/admin/items/{id}` - Update product
+
+- `DELETE /api/admin/items/{id}` - Delete product### Adding New Columns (Safe for Production)
+
 ```bash
-# After modifying models, create migration
-alembic revision --autogenerate -m "Add new column"
 
-# Review the generated migration file
+### Telegram Webhook# After modifying models, create migration
+
+- `POST /webhook/{token}` - Telegram updatesalembic revision --autogenerate -m "Add new column"
+
+
+
+## Database Models# Review the generated migration file
+
 # Apply migration
-alembic upgrade head
-```
+
+### User Managementalembic upgrade head
+
+- **User**: Customer profiles and preferences```
+
+- **Admin**: Administrative users with roles
 
 ### Migration Commands
-```bash
-# Check current version
-alembic current
+
+### E-commerce```bash
+
+- **Item**: Product catalog with variants# Check current version
+
+- **Order**: Customer orders and statusalembic current
+
+- **CartItem**: Shopping cart management
 
 # Show migration history
-alembic history
+
+### Customizationalembic history
+
+- **ShopTheme**: Branding and appearance
 
 # Downgrade to previous version
-alembic downgrade -1
-```
 
-## 📁 Project Structure
+## Telegram Bot Commandsalembic downgrade -1
 
 ```
-Actiwe/
+
+### User Commands
+
+- `/start` - Welcome message and catalog access## 📁 Project Structure
+
+- Browse products through inline buttons
+
+- Add items to cart with size/gender selection```
+
+- Complete orders with contact informationActiwe/
+
 ├── alembic/                 # Database migrations
-├── models/                  # SQLAlchemy models
-│   ├── Admin.py
-│   ├── Item.py
-│   ├── CartItem.py
+
+### Admin Commands├── models/                  # SQLAlchemy models
+
+- `/message` - Broadcast by copying to all users│   ├── Admin.py
+
+- `/forward` - Broadcast by forwarding to all users│   ├── Item.py
+
+- `/stats` - Get user and order statistics│   ├── CartItem.py
+
 │   ├── Order.py
-│   └── ShopTheme.py
+
+## Deployment│   └── ShopTheme.py
+
 ├── routes/                  # API endpoints
-│   ├── admin.py            # Admin panel routes
-│   ├── api_admin.py        # Admin API
-│   ├── api_user.py         # User API
-│   ├── auth.py             # Authentication
-│   ├── menu.py             # Menu display
+
+### Requirements│   ├── admin.py            # Admin panel routes
+
+- Python 3.9+│   ├── api_admin.py        # Admin API
+
+- PostgreSQL 12+│   ├── api_user.py         # User API
+
+- SSL certificate for HTTPS│   ├── auth.py             # Authentication
+
+- Domain name for Telegram Web App│   ├── menu.py             # Menu display
+
 │   └── error.py            # Error handling
-├── static/                  # Static files
-│   └── uploads/            # Uploaded images
-├── templates/              # HTML templates
-│   ├── admin/              # Admin templates
-│   └── errors/             # Error pages
-├── main.py                 # FastAPI application
+
+### Production Configuration├── static/                  # Static files
+
+1. Set `DEBUG=false` in `.env`│   └── uploads/            # Uploaded images
+
+2. Use strong `SECRET_KEY`├── templates/              # HTML templates
+
+3. Configure proper database credentials│   ├── admin/              # Admin templates
+
+4. Set up SSL/HTTPS│   └── errors/             # Error pages
+
+5. Configure domain for Telegram webhook├── main.py                 # FastAPI application
+
 ├── bot.py                  # Telegram bot handlers
-├── database.py             # Database configuration
-├── config.py               # Application configuration
-├── requirements.txt        # Python dependencies
-├── docker-compose.yml      # Docker configuration
-├── Dockerfile             # Docker image
+
+### Database Migrations├── database.py             # Database configuration
+
+The system automatically handles database schema changes:├── config.py               # Application configuration
+
+```bash├── requirements.txt        # Python dependencies
+
+# Check and apply migrations├── docker-compose.yml      # Docker configuration
+
+python migrations.py├── Dockerfile             # Docker image
+
 ├── nginx.conf             # Nginx configuration
-├── deploy.sh              # Production deployment
-└── dev.sh                 # Development server
-```
 
-## ⚙️ Configuration
+# View migration guide├── deploy.sh              # Production deployment
 
-### Environment Variables
+cat MIGRATIONS.md└── dev.sh                 # Development server
+
+``````
+
+
+
+### Monitoring## ⚙️ Configuration
+
+- Health endpoint: `/health`
+
+- Logs: Check application logs for errors### Environment Variables
+
+- Database: Monitor connection pool and query performance
 
 | Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
+
+## Security Features|----------|-------------|----------|---------|
+
 | `DB_HOST` | Database host | Yes | - |
-| `DB_PORT` | Database port | Yes | - |
-| `DB_NAME` | Database name | Yes | - |
-| `DB_USER` | Database user | Yes | - |
-| `DB_PASSWORD` | Database password | Yes | - |
-| `URL` | Application URL | Yes | - |
-| `TOKEN` | Telegram bot token | Yes | - |
+
+- **Input Validation**: All user inputs sanitized| `DB_PORT` | Database port | Yes | - |
+
+- **Authentication**: Telegram Web App validation| `DB_NAME` | Database name | Yes | - |
+
+- **Rate Limiting**: API endpoint protection| `DB_USER` | Database user | Yes | - |
+
+- **CORS Protection**: Configured for production| `DB_PASSWORD` | Database password | Yes | - |
+
+- **SQL Injection Prevention**: Parameterized queries| `URL` | Application URL | Yes | - |
+
+- **File Upload Security**: Type and size validation| `TOKEN` | Telegram bot token | Yes | - |
+
 | `CHANNEL_ID` | Orders channel ID | Yes | - |
-| `SADMIN` | Super admin Telegram ID | Yes | - |
+
+## Performance Optimizations| `SADMIN` | Super admin Telegram ID | Yes | - |
+
 | `SECRET_KEY` | Encryption key | No | auto-generated |
-| `ENVIRONMENT` | Environment mode | No | `development` |
-| `DEBUG` | Debug mode | No | `false` |
-| `MAX_FILE_SIZE_MB` | Max upload size | No | `5` |
 
-### Telegram Bot Setup
+- **Connection Pooling**: Efficient database connections| `ENVIRONMENT` | Environment mode | No | `development` |
 
-1. **Create bot**: Message @BotFather on Telegram
+- **Static File Serving**: Optimized file delivery| `DEBUG` | Debug mode | No | `false` |
+
+- **Response Caching**: Reduced database queries| `MAX_FILE_SIZE_MB` | Max upload size | No | `5` |
+
+- **Async Processing**: Non-blocking request handling
+
+- **Image Optimization**: Compressed uploads### Telegram Bot Setup
+
+
+
+## Support1. **Create bot**: Message @BotFather on Telegram
+
 2. **Get token**: Save the bot token
-3. **Set webhook**: The application automatically sets webhook on startup
-4. **Create channel**: Create a channel for order notifications
-5. **Add bot**: Add your bot to the channel as admin
 
-## 🔒 Security Features
+### Common Issues3. **Set webhook**: The application automatically sets webhook on startup
 
-- **Rate Limiting**: API and webhook endpoints protected
-- **Input Validation**: All user inputs validated
-- **SQL Injection Protection**: SQLAlchemy ORM with parameterized queries
-- **XSS Protection**: Template escaping and CSP headers
+1. **Database Connection**: Check credentials and network4. **Create channel**: Create a channel for order notifications
+
+2. **Telegram Webhook**: Verify HTTPS and domain setup5. **Add bot**: Add your bot to the channel as admin
+
+3. **File Uploads**: Check permissions and storage space
+
+4. **Authentication**: Validate bot token and admin ID## 🔒 Security Features
+
+
+
+### Logs and Debugging- **Rate Limiting**: API and webhook endpoints protected
+
+```bash- **Input Validation**: All user inputs validated
+
+# View application logs- **SQL Injection Protection**: SQLAlchemy ORM with parameterized queries
+
+tail -f app.log- **XSS Protection**: Template escaping and CSP headers
+
 - **CSRF Protection**: Telegram data validation
-- **Secure Headers**: HSTS, X-Frame-Options, etc.
-- **File Upload Security**: Type and size validation
 
-## 📊 Monitoring
+# Test database connection- **Secure Headers**: HSTS, X-Frame-Options, etc.
 
-### Health Check
+python -c "from database import test_database_connection; print(test_database_connection())"- **File Upload Security**: Type and size validation
+
+
+
+# Check migrations status## 📊 Monitoring
+
+python migrations.py
+
+```### Health Check
+
 ```bash
-curl https://your-domain.com/health
+
+## Licensecurl https://your-domain.com/health
+
 ```
 
+This project is proprietary software. All rights reserved.
+
 ### Logs
-- Application logs: `error.log`, `access.log`
+
+## Version- Application logs: `error.log`, `access.log`
+
 - Docker logs: `docker-compose logs -f`
 
-## 🧪 Testing
+**v2.0.0** - Production Ready
 
-### Manual Testing
-1. Start the application
-2. Open your Telegram bot
+- Dual broadcast system## 🧪 Testing
+
+- Automatic migrations
+
+- Enhanced security### Manual Testing
+
+- Performance optimizations1. Start the application
+
+- Complete documentation2. Open your Telegram bot
 3. Click "Start" and open the web app
 4. Test product browsing, cart functionality, and order placement
 

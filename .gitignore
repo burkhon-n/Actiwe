@@ -172,6 +172,11 @@ cython_debug/
 static/uploads/*
 !static/uploads/.gitkeep
 
+# Migration and test files
+add_*.py
+test_*.py
+*_test.py
+
 # Logs
 *.log
 logs/

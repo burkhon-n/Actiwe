@@ -391,9 +391,21 @@
     </div>
     <div id="cartItems" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50"></div>
     <div class="p-6 border-t bg-white">
-      <div class="flex justify-between items-center mb-6 p-4 bg-gradient-to-r from-brand/10 to-accent/10 rounded-xl">
-        <span class="font-bold text-xl text-gray-800">Jami:</span>
-        <span id="cartTotal" class="font-black text-2xl text-brand">0 UZS</span>
+      <div class="space-y-3 mb-6">
+        <div class="flex justify-between items-center text-gray-600">
+          <span class="font-medium">Mahsulotlar:</span>
+          <span id="cartSubtotal" class="font-semibold">0 UZS</span>
+        </div>
+        <div class="flex justify-between items-center text-gray-600">
+          <span class="font-medium">Yetkazib berish (Toshkent):</span>
+          <span id="cartDelivery" class="font-semibold">30 000 UZS</span>
+        </div>
+        <div class="border-t pt-3">
+          <div class="flex justify-between items-center p-4 bg-gradient-to-r from-brand/10 to-accent/10 rounded-xl">
+            <span class="font-bold text-xl text-gray-800">Jami:</span>
+            <span id="cartTotal" class="font-black text-2xl text-brand">30 000 UZS</span>
+          </div>
+        </div>
       </div>
       <button onclick="placeOrder()" id="orderBtn" class="w-full btn-primary text-white py-4 rounded-xl font-bold text-lg shadow-xl">
         Buyurtma berish
@@ -860,15 +872,20 @@
         renderCartItems() {
             const cartItemsEl = document.getElementById('cartItems');
             const cartTotalEl = document.getElementById('cartTotal');
+            const cartSubtotalEl = document.getElementById('cartSubtotal');
+            const cartDeliveryEl = document.getElementById('cartDelivery');
             const orderBtn = document.getElementById('orderBtn');
+            const deliveryFee = shopState.deliveryFee || 30000;
             
             if (!cartItemsEl || !cartTotalEl || !orderBtn) return;
 
             cartItemsEl.innerHTML = '';
-            let totalPrice = 0;
+            let subtotalPrice = 0;
             
             if (Object.keys(this.cart).length === 0) {
                 cartItemsEl.innerHTML = `<p class="text-center text-gray-500 py-10">Sizning savatingiz bo'sh.</p>`;
+                if (cartSubtotalEl) cartSubtotalEl.textContent = this.formatPrice(0);
+                if (cartDeliveryEl) cartDeliveryEl.textContent = this.formatPrice(deliveryFee);
                 cartTotalEl.textContent = this.formatPrice(0);
                 orderBtn.disabled = true;
                 return;
@@ -885,7 +902,7 @@
                 
                 if (product) {
                     const itemTotal = parseFloat(product.price) * this.cart[key];
-                    totalPrice += itemTotal;
+                    subtotalPrice += itemTotal;
                     
                     let details = [];
                     if (size !== 'N/A') {
@@ -925,6 +942,9 @@
                 }
             }
             
+            const totalPrice = subtotalPrice + deliveryFee;
+            if (cartSubtotalEl) cartSubtotalEl.textContent = this.formatPrice(subtotalPrice);
+            if (cartDeliveryEl) cartDeliveryEl.textContent = this.formatPrice(deliveryFee);
             cartTotalEl.textContent = this.formatPrice(totalPrice);
             orderBtn.disabled = false;
         }
@@ -1287,6 +1307,7 @@
             if (data.success) {
                 shopState.products = data.items || {};
                 shopState.cart = data.cart_items || {};
+                shopState.deliveryFee = data.delivery_fee || 30000;
                 
                 for (const key in shopState.cart) {
                     const itemId = key.split('-')[0];

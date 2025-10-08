@@ -264,3 +264,25 @@ async def edit_item(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@router.get("/users")
+async def users_page(request: Request, db: Session = Depends(get_db)):
+    """Render the users management page (admin only)."""
+    try:
+        # Get user role (this will validate admin access)
+        user_role = await get_user_role_from_request(request, db)
+        
+        if user_role not in ['admin', 'sadmin']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. Admin privileges required."
+            )
+        
+        return templates.TemplateResponse("admin/users.html", {"request": request})
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error accessing users page: {e}"
+        )

@@ -3,7 +3,6 @@
 from sqlalchemy import Column, Integer, String, BigInteger, Boolean
 from sqlalchemy.orm import Session
 from database import Base
-import random
 import time
 
 class Item(Base):
@@ -76,24 +75,7 @@ class Item(Base):
             return True
         return False
     
-    @staticmethod
-    def insert_random_items(session: Session, count: int):
-        items = []
-        for _ in range(count):
-            item = Item(
-                title=f"Random Item {_}",
-                price=random.randint(1, 100),
-                image=f"https://via.placeholder.com/300x200?text=Item+{_}",
-                sizes="46, 47, 48, 49, 50, 51, 52",
-                description=f"This is a description for item {_}.",
-                category_id=random.randint(1, 5),
-                created_by=random.randint(1, 10),
-                updated_by=random.randint(1, 10)
-            )
-            session.add(item)
-            session.commit()
-            items.append(item)
-        return items
+
 
     def __repr__(self):
         # This will now work correctly because the session is still active
