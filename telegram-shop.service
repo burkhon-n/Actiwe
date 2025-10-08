@@ -1,0 +1,21 @@
+[Unit]
+Description=Telegram Shop FastAPI Application
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=burkhonnurmurodov
+WorkingDirectory=/Users/burkhonnurmurodov/Documents/Actiwe
+Environment=PATH=/Users/burkhonnurmurodov/Documents/Actiwe/venv/bin
+Environment=PYTHONPATH=/Users/burkhonnurmurodov/Documents/Actiwe
+ExecStart=/Users/burkhonnurmurodov/Documents/Actiwe/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
