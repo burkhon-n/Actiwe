@@ -172,29 +172,29 @@ class DatabaseMigrator:
                     else:
                         sql_type = self.get_sqlalchemy_type_to_sql(column_info)
                     
-                    # Build ALTER TABLE statement
-                    nullable = "NULL" if column_info['nullable'] else "NOT NULL"
+                    # Build ALTER TABLE statement parts
+                    parts = [f"ALTER TABLE {table_name}", f"ADD COLUMN {column_name} {sql_type}"]
                     
-                    # Handle default values
-                    default_clause = ""
+                    # Handle default values first
                     if column_info['default'] is not None:
                         if hasattr(column_info['default'], 'arg'):
                             # Handle SQLAlchemy defaults
                             default_value = column_info['default'].arg
                             if isinstance(default_value, bool):
-                                default_clause = f" DEFAULT {str(default_value).lower()}"
+                                parts.append(f"DEFAULT {str(default_value).lower()}")
                             elif isinstance(default_value, str):
-                                default_clause = f" DEFAULT '{default_value}'"
+                                parts.append(f"DEFAULT '{default_value}'")
                             else:
-                                default_clause = f" DEFAULT {default_value}"
+                                parts.append(f"DEFAULT {default_value}")
                         elif column_info['nullable']:
-                            default_clause = " DEFAULT NULL"
+                            parts.append("DEFAULT NULL")
                     
-                    # Execute ALTER TABLE
-                    alter_sql = f"""
-                        ALTER TABLE {table_name} 
-                        ADD COLUMN {column_name} {sql_type}{default_clause} {nullable};
-                    """
+                    # Handle nullable constraint
+                    if not column_info['nullable']:
+                        parts.append("NOT NULL")
+                    
+                    # Join parts and execute
+                    alter_sql = " ".join(parts) + ";"
                     
                     conn.execute(text(alter_sql))
                     trans.commit()
