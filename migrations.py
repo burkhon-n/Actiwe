@@ -129,7 +129,7 @@ class DatabaseMigrator:
         
         return 'TEXT'  # Safe fallback
     
-    def create_enum_if_needed(self, model_class, column_name: str) -> str:
+    def create_enum_if_needed(self, model_class, column_name: str, connection=None) -> str:
         """Create enum type if needed and return the enum name."""
         column = getattr(model_class.__table__.columns, column_name, None)
         if not column:
@@ -139,7 +139,15 @@ class DatabaseMigrator:
             enum_name = getattr(column.type, 'name', f"{model_class.__tablename__}_{column_name}")
             enum_values = column.type.enums
             
-            with self.engine.connect() as conn:
+            # Use provided connection or create a new one
+            if connection:
+                conn = connection
+                should_close = False
+            else:
+                conn = self.engine.connect()
+                should_close = True
+            
+            try:
                 # Check if enum already exists
                 result = conn.execute(text("""
                     SELECT 1 FROM pg_type WHERE typname = :enum_name
@@ -151,8 +159,12 @@ class DatabaseMigrator:
                     conn.execute(text(f"""
                         CREATE TYPE {enum_name} AS ENUM ({enum_values_str});
                     """))
-                    conn.commit()
+                    if not connection:  # Only commit if we created our own connection
+                        conn.commit()
                     logger.info(f"✅ Created enum type '{enum_name}'")
+            finally:
+                if should_close:
+                    conn.close()
             
             return enum_name
         
@@ -162,40 +174,42 @@ class DatabaseMigrator:
         """Add a missing column to the database table."""
         try:
             with self.engine.connect() as conn:
+                # First, create enum type if needed (outside transaction)
+                enum_name = self.create_enum_if_needed(model_class, column_name, conn)
+                
+                # Now start transaction for column addition
                 trans = conn.begin()
                 
                 try:
-                    # Handle enum types
-                    enum_name = self.create_enum_if_needed(model_class, column_name)
                     if enum_name:
                         sql_type = enum_name
                     else:
                         sql_type = self.get_sqlalchemy_type_to_sql(column_info)
                     
-                    # Build ALTER TABLE statement parts
-                    parts = [f"ALTER TABLE {table_name}", f"ADD COLUMN {column_name} {sql_type}"]
+                    # Build ALTER TABLE statement
+                    alter_parts = []
+                    alter_parts.append(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {sql_type}")
                     
-                    # Handle default values first
+                    # Handle default values
                     if column_info['default'] is not None:
                         if hasattr(column_info['default'], 'arg'):
                             # Handle SQLAlchemy defaults
                             default_value = column_info['default'].arg
                             if isinstance(default_value, bool):
-                                parts.append(f"DEFAULT {str(default_value).lower()}")
+                                alter_parts.append(f"DEFAULT {str(default_value).lower()}")
                             elif isinstance(default_value, str):
-                                parts.append(f"DEFAULT '{default_value}'")
+                                alter_parts.append(f"DEFAULT '{default_value}'")
                             else:
-                                parts.append(f"DEFAULT {default_value}")
+                                alter_parts.append(f"DEFAULT {default_value}")
                         elif column_info['nullable']:
-                            parts.append("DEFAULT NULL")
+                            alter_parts.append("DEFAULT NULL")
                     
                     # Handle nullable constraint
                     if not column_info['nullable']:
-                        parts.append("NOT NULL")
+                        alter_parts.append("NOT NULL")
                     
-                    # Join parts and execute
-                    alter_sql = " ".join(parts) + ";"
-                    
+                    # Execute the ALTER TABLE command
+                    alter_sql = " ".join(alter_parts)
                     conn.execute(text(alter_sql))
                     trans.commit()
                     
