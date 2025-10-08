@@ -1,58 +1,63 @@
 #!/usr/bin/env python3
-"""Simple broadcasting column migration script"""
+"""Ultra-simple broadcasting column migration"""
 
 import sys
-from sqlalchemy import create_engine, text
 
 def add_broadcasting_column():
-    """Add broadcasting column with simple approach"""
     try:
-        # Create engine from database module
-        from database import DATABASE_URL
-        engine = create_engine(DATABASE_URL)
+        print("🔧 Starting broadcasting column migration...")
         
-        print("🔧 Adding broadcasting column...")
+        # Import database components
+        from database import engine
+        from sqlalchemy import text
         
+        print("✅ Database connection established")
+        
+        # Check if column exists first
         with engine.connect() as conn:
-            # Check if column exists
             result = conn.execute(text("""
-                SELECT 1 FROM information_schema.columns 
+                SELECT column_name FROM information_schema.columns 
                 WHERE table_name = 'admins' AND column_name = 'broadcasting'
             """))
             
             if result.fetchone():
-                print("✅ Broadcasting column already exists")
+                print("✅ Broadcasting column already exists!")
                 return True
-            
-            print("📝 Column missing, adding...")
-            
-            # Create enum and add column in separate statements
+        
+        print("📝 Broadcasting column missing, adding it...")
+        
+        # Add the column using separate statements
+        with engine.connect() as conn:
+            # Step 1: Create enum type (if not exists)
             try:
-                # Create enum if not exists
                 conn.execute(text("""
                     DO $$ 
                     BEGIN
                         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'broadcasting') THEN
                             CREATE TYPE broadcasting AS ENUM ('forward', 'copy');
+                            RAISE NOTICE 'Created broadcasting enum';
                         END IF;
                     END $$
                 """))
                 conn.commit()
                 print("✅ Broadcasting enum ready")
-                
-                # Add column
+            except Exception as e:
+                print(f"⚠️  Enum creation result: {e}")
+            
+            # Step 2: Add column
+            try:
                 conn.execute(text("ALTER TABLE admins ADD COLUMN broadcasting broadcasting"))
                 conn.commit()
-                print("✅ Broadcasting column added successfully")
-                
+                print("✅ Broadcasting column added!")
                 return True
-                
             except Exception as e:
-                print(f"❌ Error during migration: {e}")
+                print(f"❌ Failed to add column: {e}")
                 return False
                 
     except Exception as e:
-        print(f"❌ Failed to add broadcasting column: {e}")
+        print(f"❌ Migration failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 if __name__ == "__main__":

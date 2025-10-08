@@ -302,26 +302,29 @@ class DatabaseMigrator:
     def _handle_admin_broadcasting_migration(self, result, model_class) -> Dict[str, Any]:
         """Special handler for Admin model broadcasting column migration"""
         try:
-            # Use a fresh connection for this special handling
-            conn = self.engine.connect()
+            logger.info("📝 Found 1 missing column(s) in admins:")
+            logger.info("   - broadcasting: USER-DEFINED")
             
-            try:
-                # Check if broadcasting column exists
+            # Use a completely separate engine instance to avoid transaction conflicts
+            from database import DATABASE_URL
+            from sqlalchemy import create_engine
+            temp_engine = create_engine(DATABASE_URL)
+            
+            with temp_engine.connect() as conn:
+                # Check if broadcasting column exists (double-check)
                 col_check = conn.execute(text("""
                     SELECT 1 FROM information_schema.columns 
                     WHERE table_name = 'admins' AND column_name = 'broadcasting'
                 """))
-                col_exists = col_check.fetchone() is not None
                 
-                if col_exists:
+                if col_check.fetchone():
                     logger.info("✅ All columns exist for Admin")
+                    temp_engine.dispose()
                     return result
                 
-                logger.info("📝 Found 1 missing column(s) in admins:")
-                logger.info("   - broadcasting: USER-DEFINED")
+                # Use autocommit for DDL operations
+                conn = conn.execution_options(autocommit=True)
                 
-                # Create enum and add column with proper transaction handling
-                trans = conn.begin()
                 try:
                     # Check and create enum if needed
                     enum_check = conn.execute(text("SELECT 1 FROM pg_type WHERE typname = 'broadcasting'"))
@@ -331,18 +334,15 @@ class DatabaseMigrator:
                     
                     # Add column
                     conn.execute(text("ALTER TABLE admins ADD COLUMN broadcasting broadcasting"))
-                    trans.commit()
                     
                     result['columns_added'].append('broadcasting')
                     logger.info("✅ Added column 'broadcasting' (broadcasting) to table 'admins'")
                     
                 except Exception as e:
-                    trans.rollback()
                     logger.error(f"❌ Failed to add broadcasting column: {e}")
                     result['errors'].append(f"Failed to add column 'broadcasting'")
-                    
-            finally:
-                conn.close()
+            
+            temp_engine.dispose()
                 
         except Exception as e:
             logger.error(f"❌ Database connection error: {e}")
