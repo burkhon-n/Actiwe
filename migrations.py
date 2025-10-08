@@ -271,7 +271,13 @@ class DatabaseMigrator:
         
         # Special handling for Admin model broadcasting column
         if model_name == 'Admin' and table_name == 'admins':
-            return self._handle_admin_broadcasting_migration(result, model_class)
+            try:
+                return self._handle_admin_broadcasting_migration(result, model_class)
+            except Exception as e:
+                logger.error(f"❌ Special Admin migration failed: {e}")
+                result['errors'].append(f"Admin broadcasting migration failed: {e}")
+                # Continue with normal migration process as fallback
+                pass
         
         # Check for missing columns
         missing_columns = self.get_missing_columns(model_class)
@@ -296,7 +302,10 @@ class DatabaseMigrator:
     def _handle_admin_broadcasting_migration(self, result, model_class) -> Dict[str, Any]:
         """Special handler for Admin model broadcasting column migration"""
         try:
-            with self.engine.connect() as conn:
+            # Use a fresh connection for this special handling
+            conn = self.engine.connect()
+            
+            try:
                 # Check if broadcasting column exists
                 col_check = conn.execute(text("""
                     SELECT 1 FROM information_schema.columns 
@@ -311,10 +320,10 @@ class DatabaseMigrator:
                 logger.info("📝 Found 1 missing column(s) in admins:")
                 logger.info("   - broadcasting: USER-DEFINED")
                 
-                # Try to create enum and add column in single transaction
+                # Create enum and add column with proper transaction handling
                 trans = conn.begin()
                 try:
-                    # Check and create enum
+                    # Check and create enum if needed
                     enum_check = conn.execute(text("SELECT 1 FROM pg_type WHERE typname = 'broadcasting'"))
                     if not enum_check.fetchone():
                         conn.execute(text("CREATE TYPE broadcasting AS ENUM ('forward', 'copy')"))
@@ -331,6 +340,9 @@ class DatabaseMigrator:
                     trans.rollback()
                     logger.error(f"❌ Failed to add broadcasting column: {e}")
                     result['errors'].append(f"Failed to add column 'broadcasting'")
+                    
+            finally:
+                conn.close()
                 
         except Exception as e:
             logger.error(f"❌ Database connection error: {e}")
